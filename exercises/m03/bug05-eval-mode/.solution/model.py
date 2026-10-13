@@ -32,7 +32,7 @@ class ChurnMLP(nn.Module):
         return self.net(x).squeeze(-1)
 
 
-class ChurnPyfunc(mlflow.pyfunc.PythonModel):  # type: ignore[misc]
+class ChurnPyfunc(mlflow.pyfunc.PythonModel):  # type: ignore[misc,name-defined]
     """What gets registered: RAW customer columns in, churn probability out.
 
     Artifacts (files logged with the model):
@@ -46,6 +46,7 @@ class ChurnPyfunc(mlflow.pyfunc.PythonModel):  # type: ignore[misc]
             self.scaler = Standardizer.from_dict(json.load(fh))
         meta = context.model_config or {}
         self.kind = meta.get("kind", "mlp")
+        self.model: Any
         if self.kind == "mlp":
             self.model = ChurnMLP(hidden=int(meta.get("hidden", 32)))
             self.model.load_state_dict(torch.load(context.artifacts["weights"]))

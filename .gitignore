@@ -13,3 +13,4 @@ mlruns/
 *.ckpt
 infra/compose/harbor/installer/
 platform/k3d/cluster.yaml
+.catchup-backup/
