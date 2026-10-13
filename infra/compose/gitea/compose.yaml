@@ -1,6 +1,6 @@
 # Gitea (git server + Actions) and one act_runner, all on-prem.
 #   cd infra/compose/gitea && docker compose up -d
-# Gitea UI: http://<LXC_IP>:3300   SSH: <LXC_IP>:2222
+# Gitea UI: http://<SERVER_IP>:3300   SSH: <SERVER_IP>:2222
 name: gitea
 
 services:
@@ -15,9 +15,9 @@ services:
       GITEA__database__DB_TYPE: sqlite3
       # The URL clients see. An IP, so CI job containers and k3d pods
       # (ArgoCD, M8) can reach it too; nothing resolves "gitea.local" here.
-      GITEA__server__ROOT_URL: http://${LXC_IP}:3300/
+      GITEA__server__ROOT_URL: http://${SERVER_IP}:3300/
       GITEA__server__HTTP_PORT: "3000"
-      GITEA__server__SSH_DOMAIN: ${LXC_IP}
+      GITEA__server__SSH_DOMAIN: ${SERVER_IP}
       GITEA__server__SSH_PORT: "2222"
       GITEA__service__DISABLE_REGISTRATION: "true"
       GITEA__actions__ENABLED: "true"
@@ -43,9 +43,9 @@ services:
     environment:
       CONFIG_FILE: /config.yaml
       # Jobs see this as github.server_url and clone from it. Job containers run
-      # on their own network where "gitea" does not resolve -> use the LXC IP.
+      # on their own network where "gitea" does not resolve -> use the host SERVER_IP.
       # Stored in .runner at registration: changing it means re-registering.
-      GITEA_INSTANCE_URL: http://${LXC_IP}:3300
+      GITEA_INSTANCE_URL: http://${SERVER_IP}:3300
       # One-time token: `docker compose exec -u git gitea gitea actions generate-runner-token`
       GITEA_RUNNER_REGISTRATION_TOKEN: ${RUNNER_TOKEN:-}
       GITEA_RUNNER_NAME: lxc-runner-1

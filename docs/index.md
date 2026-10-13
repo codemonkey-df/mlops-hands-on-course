@@ -1,6 +1,6 @@
 # On-prem MLOps, hands-on
 
-You'll build this platform from an empty LXC, one component per module:
+You'll build this platform from an empty Docker host, one component per module:
 
 ```mermaid
 flowchart LR
@@ -10,7 +10,7 @@ flowchart LR
     runner --> harbor[Harbor]
     gitea --> argocd
     harbor --> argocd
-    subgraph k3d [k3d cluster in LXC]
+    subgraph k3d [k3d Kubernetes cluster]
         dagster[Dagster] --> jobs[TrainingJobs]
         jobs --> mlflow[MLflow]
         jobs --> minio[MinIO]
@@ -28,6 +28,19 @@ flowchart LR
     apps[ClientApps] --> router
     apps --> bento
 ```
+
+## Where this course was built
+
+This material was developed and verified inside a **privileged LXC container on
+Proxmox** (Ubuntu + Docker + k3d). That is a convenient on-prem lab, not a hard
+requirement.
+
+You can run the same stack on a **plain Linux VM** (Proxmox QEMU/KVM, VirtualBox,
+VMware, cloud VM) or any machine with Docker — as long as you have enough RAM
+(~16+ GB free for the full platform), can create a k3d cluster, and set
+`YOUR_SERVER_IP` to that host’s LAN IP (`make configure-ip`). Nested Kubernetes
+gotchas that show up in LXC (for example `/dev/kmsg`) are called out in **M0**;
+on a normal VM they usually do not appear.
 
 ## How each module works
 
@@ -71,8 +84,9 @@ Every module page has the same six sections. Go through them in order:
 ## Daily commands
 
 ```bash
+make configure-ip    # replace YOUR_SERVER_IP with this host's LAN IP
 make docs            # this site
-make cluster-start   # after an LXC reboot (state is kept)
+make cluster-start   # after a reboot (state is kept)
 make cluster-stop    # free RAM when you're done for the day
 make urls            # list all web UIs
 make help            # everything else

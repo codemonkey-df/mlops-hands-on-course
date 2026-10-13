@@ -1,6 +1,6 @@
 # An Ingress routes external HTTP by hostname/path to Services.
 # Traefik (bundled with k3s) is the Ingress controller that implements it.
-# Replace 192.168.1.202 with your LXC IP (`hostname -I`).
+# Placeholder YOUR_SERVER_IP: run `make configure-ip` (or set SERVER_IP=...).
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -9,14 +9,14 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: minio.192.168.1.202.nip.io     # web console
+    - host: minio.YOUR_SERVER_IP.nip.io     # web console
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service: {name: minio, port: {name: console}}
-    - host: s3.192.168.1.202.nip.io        # S3 API, used from the LXC (DVC, DuckDB, mc)
+    - host: s3.YOUR_SERVER_IP.nip.io        # S3 API, used from the host (DVC, DuckDB, mc)
       http:
         paths:
           - path: /

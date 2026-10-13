@@ -13,4 +13,4 @@ helm upgrade --install dagster dagster/dagster --version 1.13.26 -n dagster \
   -f platform/helm-values/dagster.yaml --wait --timeout 10m
 kubectl -n dagster exec deploy/dagster-dagster-webserver -c dagster -- \
   dagster sensor start drift_sensor -w /dagster-workspace/workspace.yaml -l churn || true
-echo "UI: http://dagster.192.168.1.202.nip.io:8080"
+echo "UI: http://dagster.YOUR_SERVER_IP.nip.io:8080"

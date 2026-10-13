@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Helpers for the M8 checks (sourced): a throw-away Gitea repo + Argo apps.
 source "$COURSE_ROOT/exercises/_lib.sh"
-LXC_IP="${LXC_IP:-$(hostname -I | awk '{print $1}')}"
-GITEA="http://$LXC_IP:3300"
+SERVER_IP="${SERVER_IP:-$(hostname -I | awk '{print $1}')}"
+GITEA="http://$SERVER_IP:3300"
 NETRC=$(mktemp); chmod 600 "$NETRC"
-printf 'machine %s login mlops password %s\n' "$LXC_IP" "${GITEA_ADMIN_PASSWORD:-mlops-gitea-secret}" > "$NETRC"
+printf 'machine %s login mlops password %s\n' "$SERVER_IP" "${GITEA_ADMIN_PASSWORD:-mlops-gitea-secret}" > "$NETRC"
 gapi() { curl -s --netrc-file "$NETRC" -H 'Content-Type: application/json' "$@"; }
 
 ex_repo() { # name dir -> pushes dir as the repo's main branch (public repo)

@@ -41,7 +41,7 @@ spec:
             - --serve-artifacts
             # MLflow 3 security middleware rejects unknown Host headers (DNS
             # rebinding protection). List every name clients use, port included.
-            - --allowed-hosts=mlflow.192.168.1.202.nip.io:8080,mlflow.mlflow.svc.cluster.local:5000,mlflow.mlflow:5000,mlflow:5000,localhost:5000
+            - --allowed-hosts=mlflow.YOUR_SERVER_IP.nip.io:8080,mlflow.mlflow.svc.cluster.local:5000,mlflow.mlflow:5000,mlflow:5000,localhost:5000
             - --workers=2
           env:
             - name: PG_PASSWORD

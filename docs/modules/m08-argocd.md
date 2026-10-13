@@ -108,7 +108,7 @@ platform/argocd/bootstrap.sh
 kubectl -n argocd get applications -w       # root, dagster, serving -> Synced / Healthy
 ```
 
-Open `http://argocd.192.168.1.202.nip.io:8080` (user `admin`, password printed by the script). Click `serving` to see the resource tree.
+Open `http://argocd.YOUR_SERVER_IP.nip.io:8080` (user `admin`, password printed by the script). Click `serving` to see the resource tree.
 
 !!! bug "A real error hit while writing this module"
     After the hand-over, the Dagster code server was stuck in `ImagePullBackOff`. The pull secret had been attached to the namespace's `default` ServiceAccount (M7), but the chart runs its pods under **its own** ServiceAccount. The fix is `dagster-user-deployments.imagePullSecrets` in the values, which run pods also inherit.
@@ -149,7 +149,7 @@ git tag m08-done
 3. **Rollback via Git.** `git revert <deploy commit>` and push. Argo rolls back to the previous tag, and the history in Git says who did it and why.
 4. **Diff before sync.** Disable `automated` on `serving` (in Git!), change `replicas`, push, and open **App Diff** in the UI.
 5. **Health vs sync.** Set `newTag` to a tag that doesn't exist. The app is *Synced* but *Degraded* (`ImagePullBackOff`), and the old ReplicaSet keeps serving. Why? (`maxUnavailable: 0`.)
-6. **Webhook instead of polling.** In Gitea, go to repo **Settings**, then **Webhooks**, and add `http://argocd.192.168.1.202.nip.io:8080/api/webhook` (push events). Deploys now start within seconds.
+6. **Webhook instead of polling.** In Gitea, go to repo **Settings**, then **Webhooks**, and add `http://argocd.YOUR_SERVER_IP.nip.io:8080/api/webhook` (push events). Deploys now start within seconds.
 
 ## 5. Break and fix
 

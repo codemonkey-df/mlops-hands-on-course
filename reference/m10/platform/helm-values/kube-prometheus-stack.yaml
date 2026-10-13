@@ -20,7 +20,7 @@ grafana:
   ingress:
     enabled: true
     ingressClassName: traefik
-    hosts: [grafana.192.168.1.202.nip.io]
+    hosts: [grafana.YOUR_SERVER_IP.nip.io]
   resources:
     requests: {cpu: 50m, memory: 128Mi}
     limits: {memory: 256Mi}
@@ -29,7 +29,7 @@ prometheus:
   ingress:
     enabled: true
     ingressClassName: traefik
-    hosts: [prometheus.192.168.1.202.nip.io]
+    hosts: [prometheus.YOUR_SERVER_IP.nip.io]
   prometheusSpec:
     scrapeInterval: 15s
     retention: 12h

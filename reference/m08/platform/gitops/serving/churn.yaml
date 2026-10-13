@@ -63,7 +63,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: churn.192.168.1.202.nip.io
+    - host: churn.YOUR_SERVER_IP.nip.io
       http:
         paths:
           - path: /

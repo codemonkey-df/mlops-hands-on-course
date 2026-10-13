@@ -1,10 +1,10 @@
 # Harbor config (rendered by setup.sh with envsubst -> installer/harbor.yml).
 # Only the keys we change; see installer/harbor.yml.tmpl for every option.
 
-# external_url = http://${LXC_IP}:8085 . Clients are redirected here to get a
+# external_url = http://${SERVER_IP}:8085 . Clients are redirected here to get a
 # token (WWW-Authenticate realm), so it must resolve from EVERY client:
 # your shell, CI job containers and the k3d nodes. An IP always does.
-hostname: ${LXC_IP}
+hostname: ${SERVER_IP}
 http:
   port: 8085
 # https: omitted on purpose -> plain HTTP (lab only; see the module page).

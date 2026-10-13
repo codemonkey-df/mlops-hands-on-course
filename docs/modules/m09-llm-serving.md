@@ -84,7 +84,7 @@ uv run python -m mlops_course.llm.fake_weights small-chat --size-mb 20 --max-len
 uv run python -m mlops_course.llm.fake_weights big-reasoning --size-mb 80 --max-len 16384
 ```
 
-Open the MinIO console (`minio.192.168.1.202.nip.io:8080`) and look at bucket `llm-weights`.
+Open the MinIO console (`minio.YOUR_SERVER_IP.nip.io:8080`) and look at bucket `llm-weights`.
 
 ### Step 3: The `llm-model` chart
 

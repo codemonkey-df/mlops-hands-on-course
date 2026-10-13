@@ -2,7 +2,7 @@
 #   helm upgrade --install argocd argo/argo-cd --version 10.10.3 -n argocd \
 #     --create-namespace -f platform/argocd/values.yaml
 global:
-  domain: argocd.192.168.1.202.nip.io
+  domain: argocd.YOUR_SERVER_IP.nip.io
 
 configs:
   params:

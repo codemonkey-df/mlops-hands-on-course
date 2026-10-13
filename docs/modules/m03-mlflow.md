@@ -97,11 +97,11 @@ kubectl -n mlflow rollout status deploy/mlflow
 kubectl -n mlflow logs deploy/mlflow | head -30      # watch the DB migrations on first start
 ```
 
-You should see `curl http://mlflow.$LXC_IP.nip.io:8080/health` return `OK`, and the UI open in your browser.
+You should see `curl http://mlflow.$SERVER_IP.nip.io:8080/health` return `OK`, and the UI open in your browser.
 
 !!! bug "Two real errors hit while writing this module"
     1. `ModuleNotFoundError: No module named 'psycopg'`. **SQLAlchemy 2.1** maps `postgresql://` to *psycopg 3*, not psycopg2, so the plain URI picks a driver you didn't install. The fix is to install `psycopg` **and** spell the driver out: `postgresql+psycopg://`.
-    2. `model loading hangs forever` from the LXC. The server advertises *multipart downloads*: it hands the client presigned MinIO URLs built from **its own** endpoint (`minio.storage.svc.cluster.local`), which doesn't resolve outside the cluster. Clients outside Kubernetes set `MLFLOW_ENABLE_PROXY_MULTIPART_DOWNLOAD=false` (and the `_UPLOAD` equivalent) to stream through the server instead. They're in `.env.example`.
+    2. `model loading hangs forever` from the host. The server advertises *multipart downloads*: it hands the client presigned MinIO URLs built from **its own** endpoint (`minio.storage.svc.cluster.local`), which doesn't resolve outside the cluster. Clients outside Kubernetes set `MLFLOW_ENABLE_PROXY_MULTIPART_DOWNLOAD=false` (and the `_UPLOAD` equivalent) to stream through the server instead. They're in `.env.example`.
 
 ### Step 3: Client environment
 

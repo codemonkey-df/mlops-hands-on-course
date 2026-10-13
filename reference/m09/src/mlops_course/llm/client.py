@@ -30,7 +30,7 @@ class LLMSettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="LLM_", env_file=".env", extra="ignore")
 
-    base_url: str = "http://llm.192.168.1.202.nip.io:8080/v1"  # note the /v1
+    base_url: str = "http://llm.YOUR_SERVER_IP.nip.io:8080/v1"  # note the /v1
     api_key: str = ""
 
 

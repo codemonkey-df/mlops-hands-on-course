@@ -4,8 +4,8 @@
 # Idempotent: safe to re-run.
 set -euo pipefail
 cd "$(dirname "$0")"
-export LXC_IP="${LXC_IP:-$(hostname -I | awk '{print $1}')}"
-GITEA="http://$LXC_IP:3300"
+export SERVER_IP="${SERVER_IP:-$(hostname -I | awk '{print $1}')}"
+GITEA="http://$SERVER_IP:3300"
 ADMIN=mlops
 ADMIN_PASS="${GITEA_ADMIN_PASSWORD:-mlops-gitea-secret}"
 ROOT="$(cd ../../.. && pwd)"
@@ -31,7 +31,7 @@ secret() { api -o /dev/null -w "secret $1: %{http_code}\n" -X PUT \
   "$GITEA/api/v1/repos/$ADMIN/mlops/actions/secrets/$1" -d "$(python3 -c 'import json,sys; print(json.dumps({"data": sys.argv[1]}))' "$2")"; }
 secret HARBOR_USER "$HARBOR_CI_USER"
 secret HARBOR_PASSWORD "$HARBOR_CI_SECRET"
-secret MLFLOW_TRACKING_URI "http://mlflow.$LXC_IP.nip.io:8080"
+secret MLFLOW_TRACKING_URI "http://mlflow.$SERVER_IP.nip.io:8080"
 
 echo "Gitea: $GITEA  (user $ADMIN)"
-echo "git remote add gitea http://$ADMIN:<password>@$LXC_IP:3300/$ADMIN/mlops.git"
+echo "git remote add gitea http://$ADMIN:<password>@$SERVER_IP:3300/$ADMIN/mlops.git"

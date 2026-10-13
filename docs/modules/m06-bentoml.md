@@ -124,10 +124,10 @@ docker run --rm -p 3002:3000 mlops/churn-bento:mv7     # smoke test, then Ctrl+C
 k3d image import mlops/churn-bento:mv7 -c mlops
 kubectl apply -f platform/k8s/serving/
 kubectl -n serving rollout status deploy/churn
-curl -s -X POST http://churn.192.168.1.202.nip.io:8080/model_info
+curl -s -X POST http://churn.YOUR_SERVER_IP.nip.io:8080/model_info
 ```
 
-Open `http://churn.192.168.1.202.nip.io:8080/docs` for the generated Swagger UI.
+Open `http://churn.YOUR_SERVER_IP.nip.io:8080/docs` for the generated Swagger UI.
 
 ```bash
 git add src tests platform pyproject.toml uv.lock .env.example && git commit -m "m06: bentoml" && git tag m06-done

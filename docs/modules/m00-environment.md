@@ -28,7 +28,7 @@ kubeconfig
 :   `~/.kube/config` lists clusters, users and **contexts** (a cluster plus a user). `kubectl config current-context` tells you which cluster you're about to change. Check it before every destructive command.
 
 Ingress + nip.io
-:   An Ingress routes HTTP by hostname. `anything.192.168.1.202.nip.io` is public DNS that always resolves to `192.168.1.202`. So you get real hostnames without editing `/etc/hosts`.
+:   An Ingress routes HTTP by hostname. `anything.<your-ip>.nip.io` is public DNS that always resolves to that IP. So you get real hostnames without editing `/etc/hosts`. In this course the placeholder `YOUR_SERVER_IP` stands for **this machine's LAN IP** (not a special “LXC” address — any host IP works).
 
 **Why k3d inside an LXC is special.** You're running containers (k3s nodes) inside containers (Docker) inside a container (LXC). The kernel is shared with Proxmox, so anything that touches the kernel directly can be blocked by the LXC's policies: `/dev/kmsg`, sysctls, kernel modules. You'll meet this in Step 3.
 
@@ -84,10 +84,26 @@ cp reference/m00/platform/k3d/cluster.yaml.tpl platform/k3d/
 
     Kubelet died with `failed to create kubelet: open /dev/kmsg: operation not permitted`, and `k3d cluster create` hung forever. In an LXC, *the device node existing* and *the cgroup allowing access to it* are two different things. The template binds `/dev/null` over it. The clean host-side fix is `lxc.cgroup2.devices.allow: c 1:11 rwm` in `/etc/pve/lxc/<id>.conf`.
 
-### Step 4: Create the cluster
+### Step 4: Set your server IP
+
+Manifests and examples use the placeholder `YOUR_SERVER_IP`. Replace it with
+**this machine's LAN IP** (whatever host you run Docker on — laptop, VM, or
+container):
 
 ```bash
-make cluster-up      # renders the template with your LXC IP, then runs k3d cluster create
+hostname -I | awk '{print $1}'     # example: 10.0.0.42
+make configure-ip                  # or: SERVER_IP=10.0.0.42 make configure-ip
+cp -n .env.example .env            # then open .env if you need to adjust secrets
+export SERVER_IP=$(hostname -I | awk '{print $1}')   # useful in every shell
+```
+
+`nip.io` turns `app.$SERVER_IP.nip.io` into DNS that resolves to that IP, so you
+never edit `/etc/hosts`.
+
+### Step 5: Create the cluster
+
+```bash
+make cluster-up      # renders the template with SERVER_IP, then k3d cluster create
 kubectl config current-context    # -> k3d-mlops
 kubectl get nodes -o wide
 docker ps --format '{{.Names}}'   # the "nodes" are just containers
@@ -95,22 +111,21 @@ docker ps --format '{{.Names}}'   # the "nodes" are just containers
 
 You should see three `Ready` nodes after about 25 seconds, and pods in `kube-system` becoming `Running` within about a minute.
 
-### Step 5: Smoke-test ingress
+### Step 6: Smoke-test ingress
 
 ```bash
-export LXC_IP=$(hostname -I | awk '{print $1}')    # put this in ~/.bashrc
 kubectl create deploy whoami --image=traefik/whoami --port=80
 kubectl expose deploy whoami --port=80
-kubectl create ingress whoami --rule="whoami.$LXC_IP.nip.io/*=whoami:80"
+kubectl create ingress whoami --rule="whoami.$SERVER_IP.nip.io/*=whoami:80"
 kubectl rollout status deploy/whoami
-curl http://whoami.$LXC_IP.nip.io:8080
+curl http://whoami.$SERVER_IP.nip.io:8080
 ```
 
-You should see `Hostname: whoami-...`. The request went *LXC port 8080, then serverlb, then Traefik, then the Service, then the Pod*.
+You should see `Hostname: whoami-...`. The request went *host port 8080, then serverlb, then Traefik, then the Service, then the Pod*.
 
 Clean up: `kubectl delete deploy,svc,ingress whoami`.
 
-### Step 6: The Python project and this site
+### Step 7: The Python project and this site
 
 `pyproject.toml` is already in place:
 
@@ -123,11 +138,11 @@ make docs            # you're probably reading this through it already
 make precommit       # ruff + mypy + pytest. Must be green before every commit
 ```
 
-### Step 7: k9s tour
+### Step 8: k9s tour
 
 Run `k9s`, then try: `:pods` ++enter++, `0` (all namespaces), `/traefik` (filter), ++l++ (logs), ++d++ (describe), ++s++ (shell), `:nodes`, ++ctrl+c++. Keep k9s open in a second terminal for the rest of the course.
 
-### Step 8: Commit a baseline
+### Step 9: Commit a baseline
 
 ```bash
 git add -A && git commit -m "m00: environment" && git tag m00-done

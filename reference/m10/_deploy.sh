@@ -29,6 +29,6 @@ docker build -q -f platform/images/mock-vllm/Dockerfile -t 127.0.0.1:8085/mlops/
 docker push -q 127.0.0.1:8085/mlops/mock-vllm:0.1.0
 
 echo "stack ready:"
-echo "  Grafana    http://grafana.192.168.1.202.nip.io:8080   (admin / lab)"
-echo "  Prometheus http://prometheus.192.168.1.202.nip.io:8080"
+echo "  Grafana    http://grafana.YOUR_SERVER_IP.nip.io:8080   (admin / lab)"
+echo "  Prometheus http://prometheus.YOUR_SERVER_IP.nip.io:8080"
 echo "now: git add platform src tests && git commit -m 'm10: observability' && git push gitea main"

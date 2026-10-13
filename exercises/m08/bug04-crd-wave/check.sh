@@ -12,7 +12,7 @@ kind: Application
 metadata: { name: ex-m08-bug04-root, namespace: argocd }
 spec:
   project: default
-  source: { repoURL: "http://192.168.1.202:3300/mlops/$repo.git", targetRevision: main, path: apps }
+  source: { repoURL: "http://YOUR_SERVER_IP:3300/mlops/$repo.git", targetRevision: main, path: apps }
   destination: { server: "https://kubernetes.default.svc", namespace: argocd }
   syncPolicy: { automated: { prune: true } }
 YAML

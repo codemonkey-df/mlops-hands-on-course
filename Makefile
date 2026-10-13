@@ -1,25 +1,29 @@
 # Course task runner. `make help` lists targets.
 SHELL := /bin/bash
-LXC_IP ?= $(shell hostname -I | awk '{print $$1}')
-export LXC_IP
+SERVER_IP ?= $(shell hostname -I | awk '{print $$1}')
+export SERVER_IP
 CLUSTER := mlops
 
-.PHONY: help docs docs-build cluster-up cluster-down cluster-stop cluster-start cluster-status \
-        lint fmt typecheck test precommit urls
+.PHONY: help docs docs-build configure-ip cluster-up cluster-down cluster-stop cluster-start \
+        cluster-status lint fmt typecheck test precommit urls
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z0-9_%-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-22s\033[0m %s\n",$$1,$$2}'
 
 # ---------- course site ----------
-docs: ## Serve the course site on http://$(LXC_IP):8000 (live reload)
+docs: ## Serve the course site on http://$(SERVER_IP):8000 (live reload)
 	uv run mkdocs serve -a 0.0.0.0:8000 --livereload
 
 docs-build: ## Strict build of the site (fails on broken snippets/links)
 	uv run mkdocs build --strict
 
+# ---------- host IP ----------
+configure-ip: ## Replace YOUR_SERVER_IP with this machine's LAN IP (SERVER_IP=... to override)
+	@scripts/configure-ip.sh
+
 # ---------- cluster ----------
 platform/k3d/cluster.yaml: platform/k3d/cluster.yaml.tpl
-	envsubst '$${LXC_IP}' < $< > $@
+	envsubst '$${SERVER_IP}' < $< > $@
 
 cluster-up: platform/k3d/cluster.yaml ## Create the k3d cluster
 	k3d cluster create --config platform/k3d/cluster.yaml
@@ -38,7 +42,7 @@ cluster-status: ## Nodes, pods and resource usage
 	kubectl get nodes -o wide && kubectl get pods -A && kubectl top nodes
 
 urls: ## Print the web UIs of the course
-	@echo "Course site : http://$(LXC_IP):8000"
+	@echo "Course site : http://$(SERVER_IP):8000"
 	@kubectl get ingress -A -o jsonpath='{range .items[*]}{.metadata.namespace}{"\t"}http://{.spec.rules[0].host}:8080{"\n"}{end}' 2>/dev/null || true
 
 # ---------- exercises ----------

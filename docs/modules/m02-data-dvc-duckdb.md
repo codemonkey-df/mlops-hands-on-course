@@ -138,7 +138,7 @@ You should see three days with about 10,000 rows each and a churn rate of about 
 ```bash
 dvc init                                    # creates .dvc/ (commit it) and .dvcignore
 dvc remote add -d minio s3://dvc/store      # -d = default remote
-dvc remote modify minio endpointurl http://s3.$LXC_IP.nip.io:8080
+dvc remote modify minio endpointurl http://s3.$SERVER_IP.nip.io:8080
 dvc remote modify --local minio access_key_id mlops                  # --local -> .dvc/config.local
 dvc remote modify --local minio secret_access_key mlops-minio-secret #   which is git-ignored
 cat .dvc/config            # no secrets in here

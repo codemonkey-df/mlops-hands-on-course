@@ -37,7 +37,7 @@ class S3Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="S3_", env_file=".env", extra="ignore")
 
-    endpoint_url: str = "http://s3.192.168.1.202.nip.io:8080"
+    endpoint_url: str = "http://s3.YOUR_SERVER_IP.nip.io:8080"
     access_key: str = "mlops"
     secret_key: str = ""
     region: str = "us-east-1"  # MinIO ignores it, but every S3 client wants one

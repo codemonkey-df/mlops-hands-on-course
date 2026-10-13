@@ -3,7 +3,7 @@
 import json
 import urllib.request
 
-URL = "http://churn.192.168.1.202.nip.io:8080/predict"
+URL = "http://churn.YOUR_SERVER_IP.nip.io:8080/predict"
 
 customers = [
     {"customer_id": "C1", "plan": "basic", "region": "north", "tenure_months": 2,

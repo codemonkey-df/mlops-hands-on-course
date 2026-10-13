@@ -78,7 +78,7 @@ ingress:
   enabled: true
   ingressClassName: traefik
   dagsterWebserver:
-    host: dagster.192.168.1.202.nip.io
+    host: dagster.YOUR_SERVER_IP.nip.io
     path: /
     pathType: Prefix
 

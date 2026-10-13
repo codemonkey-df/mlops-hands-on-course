@@ -137,8 +137,8 @@ make catchup-m10          # or run the helm commands in reference/m10/_deploy.sh
 You should see:
 
 - `kubectl -n observability get pods` → prometheus, grafana, node-exporter, kube-state-metrics, operator — all Running
-- Grafana at http://grafana.192.168.1.202.nip.io:8080 (`admin` / `lab`)
-- Prometheus at http://prometheus.192.168.1.202.nip.io:8080
+- Grafana at http://grafana.YOUR_SERVER_IP.nip.io:8080 (`admin` / `lab`)
+- Prometheus at http://prometheus.YOUR_SERVER_IP.nip.io:8080
 
 !!! warning "This is the heavy install"
     Prometheus + Grafana + exporters take a couple of minutes and about 1.5–2 GB RAM. If a pod is `Pending`, `kubectl describe` it: usually the local-path PVC or a memory limit.

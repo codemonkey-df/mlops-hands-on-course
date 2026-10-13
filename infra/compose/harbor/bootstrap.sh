@@ -7,8 +7,8 @@
 # Robot secrets are written to infra/compose/harbor/robots.env (git-ignored).
 set -euo pipefail
 cd "$(dirname "$0")"
-LXC_IP="${LXC_IP:-$(hostname -I | awk '{print $1}')}"
-API="http://$LXC_IP:8085/api/v2.0"
+SERVER_IP="${SERVER_IP:-$(hostname -I | awk '{print $1}')}"
+API="http://$SERVER_IP:8085/api/v2.0"
 AUTH="admin:${HARBOR_ADMIN_PASSWORD:-Harbor-lab-12345}"
 api() { curl -sS -u "$AUTH" -H 'Content-Type: application/json' "$@"; }
 

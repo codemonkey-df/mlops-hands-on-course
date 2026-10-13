@@ -1,7 +1,7 @@
 """Train a churn model and track everything in MLflow.
 
 Examples:
-    export MLFLOW_TRACKING_URI=http://mlflow.192.168.1.202.nip.io:8080
+    export MLFLOW_TRACKING_URI=http://mlflow.YOUR_SERVER_IP.nip.io:8080
     uv run python -m mlops_course.training.train --model logreg
     uv run python -m mlops_course.training.train --model mlp --epochs 30 --lr 0.003
 """

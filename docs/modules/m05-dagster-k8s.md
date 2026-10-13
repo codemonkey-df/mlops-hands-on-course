@@ -126,7 +126,7 @@ kubectl -n dagster get pods
 # dagster-dagster-webserver-...                 1/1 Running
 ```
 
-Open `http://dagster.192.168.1.202.nip.io:8080`. Under **Deployment**, then **Code locations**, `churn` should be green.
+Open `http://dagster.YOUR_SERVER_IP.nip.io:8080`. Under **Deployment**, then **Code locations**, `churn` should be green.
 
 ### Step 6: Launch a run and watch the Job
 

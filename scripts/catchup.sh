@@ -28,4 +28,9 @@ if [[ -x "$ref/_deploy.sh" && "$files_only" != "--files-only" ]]; then
   echo "running $module deploy..."
   (cd "$root" && "$ref/_deploy.sh")
 fi
+# Reference files use YOUR_SERVER_IP; rewrite to this machine's LAN IP.
+if grep -Rql 'YOUR_SERVER_IP' "$root/platform" "$root/src" 2>/dev/null; then
+  echo "rewriting YOUR_SERVER_IP -> SERVER_IP..."
+  (cd "$root" && "$root/scripts/configure-ip.sh")
+fi
 echo "$module caught up."

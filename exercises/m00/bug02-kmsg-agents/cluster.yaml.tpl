@@ -1,5 +1,5 @@
 # k3d cluster definition for the whole course (template).
-# `make cluster-up` renders it with envsubst (fills ${LXC_IP}) and creates the cluster.
+# `make cluster-up` renders it with envsubst (fills ${SERVER_IP}) and creates the cluster.
 #
 # k3d runs every Kubernetes "node" as a Docker container, so the cluster lives
 # entirely inside this LXC and can be deleted/recreated in ~30 seconds.
@@ -13,7 +13,7 @@ image: rancher/k3s:v1.35.5-k3s1   # pinning k3s = pinning the Kubernetes version
 ports:
   # k3d puts a small nginx "serverlb" container in front of the nodes.
   # These map LXC ports -> the Traefik ingress controller inside the cluster.
-  # Every web UI is reachable as http://<app>.${LXC_IP}.nip.io:8080
+  # Every web UI is reachable as http://<app>.${SERVER_IP}.nip.io:8080
   - port: 8080:80
     nodeFilters: [loadbalancer]
   - port: 8443:443
@@ -31,7 +31,7 @@ volumes:
 hostAliases:
   # Written into /etc/hosts of every node container, so pods/containerd can
   # resolve services that run *outside* the cluster (Harbor, Gitea in Compose).
-  - ip: ${LXC_IP}
+  - ip: ${SERVER_IP}
     hostnames: [harbor.local, gitea.local]
 registries:
   # Harbor (Module 7) speaks plain HTTP. containerd inside each k3s node must be

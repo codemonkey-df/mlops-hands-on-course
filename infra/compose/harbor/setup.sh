@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 VERSION=v2.15.4
-export LXC_IP="${LXC_IP:-$(hostname -I | awk '{print $1}')}"
+export SERVER_IP="${SERVER_IP:-$(hostname -I | awk '{print $1}')}"
 export HARBOR_DATA="${HARBOR_DATA:-$HOME/.local/share/harbor}"
 # Lab passwords. Override via env; never commit real ones.
 export HARBOR_ADMIN_PASSWORD="${HARBOR_ADMIN_PASSWORD:-Harbor-lab-12345}"
@@ -32,5 +32,5 @@ docker compose up -d
 cd ..
 
 echo "waiting for Harbor API..."
-until curl -sf "http://$LXC_IP:8085/api/v2.0/health" | grep -q '"status":"healthy"'; do sleep 3; done
-echo "Harbor UI: http://$LXC_IP:8085  (admin / \$HARBOR_ADMIN_PASSWORD)"
+until curl -sf "http://$SERVER_IP:8085/api/v2.0/health" | grep -q '"status":"healthy"'; do sleep 3; done
+echo "Harbor UI: http://$SERVER_IP:8085  (admin / \$HARBOR_ADMIN_PASSWORD)"

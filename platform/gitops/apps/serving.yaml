@@ -12,7 +12,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: http://192.168.1.202:3300/mlops/mlops.git
+    repoURL: http://YOUR_SERVER_IP:3300/mlops/mlops.git
     targetRevision: main
     path: platform/gitops/serving
   destination:

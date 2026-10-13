@@ -120,7 +120,7 @@ kubectl -n storage get endpointslices           # the pod IP behind Service mini
 
 You should see:
 
-- `curl -s -o /dev/null -w '%{http_code}' http://s3.$LXC_IP.nip.io:8080/minio/health/ready` returns `200`;
+- `curl -s -o /dev/null -w '%{http_code}' http://s3.$SERVER_IP.nip.io:8080/minio/health/ready` returns `200`;
 - the console at `http://minio.<LXC-IP>.nip.io:8080` (log in with `mlops` / `mlops-minio-secret`) lists 5 buckets.
 
 ### Part B: Postgres with your own Helm chart

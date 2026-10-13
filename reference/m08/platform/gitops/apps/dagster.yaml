@@ -18,7 +18,7 @@ spec:
         releaseName: dagster # keep resource names identical to the M5 install
         valueFiles:
           - $values/platform/gitops/dagster/values.yaml
-    - repoURL: http://192.168.1.202:3300/mlops/mlops.git
+    - repoURL: http://YOUR_SERVER_IP:3300/mlops/mlops.git
       targetRevision: main
       ref: values # only provides $values, renders nothing itself
   destination:

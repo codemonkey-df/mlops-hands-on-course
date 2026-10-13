@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: http://192.168.1.202:3300/mlops/ex-m08-bug04.git
+    repoURL: http://YOUR_SERVER_IP:3300/mlops/ex-m08-bug04.git
     targetRevision: main
     path: cards
   destination:

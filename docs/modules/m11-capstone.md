@@ -57,16 +57,16 @@ No new components. You operate what you already built.
 ### Step 1: Snapshot the current champion
 
 ```bash
-# MLflow UI: http://mlflow.<LXC_IP>.nip.io:8080  → Models → churn-classifier
+# MLflow UI: http://mlflow.<SERVER_IP>.nip.io:8080  → Models → churn-classifier
 # Note @champion version, e.g. v7
 
-curl -s http://churn.192.168.1.202.nip.io:8080/model_info | python -m json.tool
+curl -s http://churn.$SERVER_IP.nip.io:8080/model_info | python -m json.tool
 # "mlflow_version": "7"
 ```
 
 ### Step 2: Inject drift
 
-Dagster UI (`http://dagster.<LXC_IP>.nip.io:8080`) → `raw_customers` → Launchpad:
+Dagster UI (`http://dagster.<SERVER_IP>.nip.io:8080`) → `raw_customers` → Launchpad:
 
 - Partition: a **new** day that does not yet exist (e.g. `2026-10-14`)
 - Config:
@@ -105,7 +105,7 @@ CI will:
 
 ```bash
 kubectl -n serving rollout status deploy/churn
-curl -s http://churn.192.168.1.202.nip.io:8080/model_info
+curl -s http://churn.$SERVER_IP.nip.io:8080/model_info
 ```
 
 The `mlflow_version` must be the new champion. Grafana **Churn API** heatmap should shift after you send a few `/predict` batches.

@@ -137,7 +137,7 @@ export DAGSTER_HOME=$PWD/.dagster_home && mkdir -p $DAGSTER_HOME   # run history
 uv run dagster dev -m mlops_course.pipelines.definitions -h 0.0.0.0 -p 3000
 ```
 
-Open `http://192.168.1.202:3000`. In **Assets**, then **View global asset lineage**, you should see the graph from section 1. Then, in a second terminal (with the same `source .env` and `DAGSTER_HOME`):
+Open `http://YOUR_SERVER_IP:3000`. In **Assets**, then **View global asset lineage**, you should see the graph from section 1. Then, in a second terminal (with the same `source .env` and `DAGSTER_HOME`):
 
 ```bash
 M="-m mlops_course.pipelines.definitions"

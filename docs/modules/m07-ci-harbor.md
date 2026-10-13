@@ -85,7 +85,7 @@ printf '%s' "$HARBOR_CI_SECRET" | docker login 127.0.0.1:8085 -u "$HARBOR_CI_USE
 docker tag busybox:1.37 127.0.0.1:8085/mlops/smoke:1 && docker push 127.0.0.1:8085/mlops/smoke:1
 ```
 
-Open `http://192.168.1.202:8085` (admin / `Harbor-lab-12345`): **Projects**, then **mlops**, **Repositories**.
+Open `http://YOUR_SERVER_IP:8085` (admin / `Harbor-lab-12345`): **Projects**, then **mlops**, **Repositories**.
 
 ### Step 3: Let the cluster pull
 
@@ -131,7 +131,7 @@ docker logs gitea-runner-1 | tail -2        # "... with labels: [mlops-ci], decl
 ```
 
 !!! bug "Another real error"
-    The first job failed with `Could not resolve host: gitea`. Jobs get `github.server_url` from the URL the **runner registered with** (`GITEA_INSTANCE_URL`), not from Gitea's `ROOT_URL`, and job containers run on their own network. The fix is to register with `http://<LXC_IP>:3300`.
+    The first job failed with `Could not resolve host: gitea`. Jobs get `github.server_url` from the URL the **runner registered with** (`GITEA_INSTANCE_URL`), not from Gitea's `ROOT_URL`, and job containers run on their own network. The fix is to register with `http://<SERVER_IP>:3300`.
 
 ### Step 5: The workflow
 
@@ -145,11 +145,11 @@ docker logs gitea-runner-1 | tail -2        # "... with labels: [mlops-ci], decl
 ### Step 6: Push your repo and watch it run
 
 ```bash
-git remote add gitea http://192.168.1.202:3300/mlops/mlops.git
+git remote add gitea http://YOUR_SERVER_IP:3300/mlops/mlops.git
 git push gitea main            # user mlops / mlops-gitea-secret
 ```
 
-Open `http://192.168.1.202:3300/mlops/mlops/actions`. The `test` job takes about a minute; `images` takes 3 to 5 minutes the first time (later runs are faster thanks to the uv cache volume and Docker layer cache). Then:
+Open `http://YOUR_SERVER_IP:3300/mlops/mlops/actions`. The `test` job takes about a minute; `images` takes 3 to 5 minutes the first time (later runs are faster thanks to the uv cache volume and Docker layer cache). Then:
 
 ```bash
 # in Harbor UI: mlops/dagster-code:<sha8>, mlops/churn-bento:mv7-<sha8>

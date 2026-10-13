@@ -1,16 +1,19 @@
 # CLI reference
 
-Replace `<LXC_IP>` with `$(hostname -I | awk '{print $1}')`. Most UIs are `http://<name>.<LXC_IP>.nip.io:8080`.
+`YOUR_SERVER_IP` in files = this machine’s LAN IP. Discover it with
+`hostname -I | awk '{print $1}'`, then `make configure-ip`. Most UIs are
+`http://<name>.$SERVER_IP.nip.io:8080`.
 
 ## Course
 
 | Command | What it does |
 |---|---|
+| `make configure-ip` | Replace `YOUR_SERVER_IP` with your LAN IP |
 | `make docs` | MkDocs Material on `:8000` |
 | `make cluster-up` / `cluster-stop` / `cluster-start` / `cluster-down` | k3d lifecycle |
 | `make urls` | Print Ingress hosts |
 | `make check-mNN` / `make check-mNN BUG=bug01` | Break/fix verifiers |
-| `make catchup-mNN` | Copy reference + deploy |
+| `make catchup-mNN` | Copy reference + deploy (+ rewrites IP) |
 | `make precommit` | ruff + mypy + pytest |
 
 ## Kubernetes
