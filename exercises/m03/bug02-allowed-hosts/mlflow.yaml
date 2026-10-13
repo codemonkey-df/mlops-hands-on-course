@@ -1,0 +1,62 @@
+# Exercise MLflow server: SQLite backend (throw-away), artifacts on the real MinIO
+# under s3://mlflow/exercises/. Same image as your platform deployment.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: mlflow}
+  template:
+    metadata:
+      labels: {app: mlflow}
+    spec:
+      containers:
+        - name: mlflow
+          image: mlops/mlflow:3.17.1-2
+          imagePullPolicy: IfNotPresent
+          command: [mlflow, server]
+          args:
+            - --host=0.0.0.0
+            - --port=5000
+            - --backend-store-uri=sqlite:////tmp/mlflow.db
+            - --artifacts-destination=s3://mlflow/exercises/
+            - --serve-artifacts
+            - --allowed-hosts=mlflow:5000
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom: {secretKeyRef: {name: s3, key: AWS_ACCESS_KEY_ID}}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom: {secretKeyRef: {name: s3, key: AWS_SECRET_ACCESS_KEY}}
+            - name: MLFLOW_S3_ENDPOINT_URL
+              value: http://minio.storage.svc.cluster.local:9000
+          ports:
+            - {name: http, containerPort: 5000}
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow
+spec:
+  selector: {app: mlflow}
+  ports:
+    - {name: http, port: 5000, targetPort: http}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mlflow
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: __HOST__
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: {name: mlflow, port: {name: http}}
