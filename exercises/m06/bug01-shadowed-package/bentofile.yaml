@@ -1,0 +1,38 @@
+# Bento build recipe. Build context = src/ (where the mlops_course package lives):
+#   uv run bentoml build -f platform/bento/bentofile.yaml src --version mv7
+service: "mlops_course.serving.service:ChurnService"
+name: churn
+labels:
+  owner: mlops-course
+  project: churn
+include: # relative to the build context (src/)
+  - "mlops_course/__init__.py"
+  - "mlops_course/serving/*.py"
+exclude:
+  - "**/__pycache__"
+python:
+  # Pin to the versions in uv.lock: the Bento must run the same libraries
+  # the model was trained and tested with.
+  packages:
+    - bentoml==1.4.39
+    - mlflow==3.17.1
+    # CPU-only torch (~200 MB instead of ~2.5 GB of CUDA libraries). --find-links,
+    # NOT extra_index_url: uv takes a package from the FIRST index that has it, and
+    # the torch index also hosts numpy/... in older versions -> "no solution found".
+    - --find-links https://download.pytorch.org/whl/cpu/torch/
+    - torch==2.14.1+cpu
+    - scikit-learn==1.9.1
+    - polars==2.0.0
+    - pandas==3.0.6
+    - numpy==2.5.4
+    - pydantic==2.14.1
+    - prometheus-client==0.26.0
+  lock_packages: false # already pinned
+docker:
+  distro: debian
+  python_version: "3.12"
+envs:
+  - name: BENTOML_DO_NOT_TRACK
+    value: "true"
+  - name: MLFLOW_DISABLE_AGENT_HINT
+    value: "1"

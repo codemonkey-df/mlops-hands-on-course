@@ -5,6 +5,7 @@ description = "Hands-on on-prem MLOps course: Dagster, MLflow, DVC, BentoML, vLL
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "bentoml==1.4.39",
     "dagster==1.13.26",
     "dagster-k8s==0.29.26",
     "dagster-postgres==0.29.26",

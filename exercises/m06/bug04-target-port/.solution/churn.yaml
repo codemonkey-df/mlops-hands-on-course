@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: churn
+  labels: { app: churn }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: churn }
+  strategy:
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } # never drop below 2 ready pods
+  template:
+    metadata:
+      labels: { app: churn }
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: bento
+          image: mlops/churn-bento:mv7
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 3000 }
+          env:
+            - name: BENTOML_DO_NOT_TRACK
+              value: "true"
+          resources:
+            requests: { cpu: 250m, memory: 768Mi }
+            limits: { memory: 1536Mi } # 2 workers x (torch + model)
+          # BentoML endpoints: /livez = process alive, /readyz = model loaded.
+          startupProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 3
+            failureThreshold: 40 # up to 2 min to load the model
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /livez, port: http }
+            periodSeconds: 10
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: churn
+  labels: { app: churn } # selected by the ServiceMonitor in M10
+spec:
+  selector: { app: churn }
+  ports:
+    - { name: http, port: 3000, targetPort: http }
