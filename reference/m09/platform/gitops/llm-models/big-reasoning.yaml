@@ -1,0 +1,15 @@
+# Big model for complex tickets (technical, cancellation): longer context,
+# slower, fewer concurrent sequences. On real GPUs it would span 2 GPUs.
+mock: true
+image:
+  mock:
+    repository: harbor.local:8085/mlops/mock-vllm
+    tag: "0.1.0" # ci:mock-vllm-tag
+model:
+  servedName: big-reasoning
+  weightsPrefix: big-reasoning
+  maxModelLen: 16384
+  maxNumSeqs: 4
+  tensorParallelSize: 2   # real mode: must equal gpu.count
+gpu: {count: 2}
+sim: {loadSeconds: 45, ttftSeconds: 0.6, tokensPerSecond: 15}

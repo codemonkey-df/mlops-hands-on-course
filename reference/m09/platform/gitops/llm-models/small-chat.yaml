@@ -1,0 +1,13 @@
+# Fast, cheap model for simple tickets (billing, shipping, chit-chat).
+# Values for platform/charts/llm-model; Argo CD app: apps/llm-small-chat.yaml
+mock: true
+image:
+  mock:
+    repository: harbor.local:8085/mlops/mock-vllm
+    tag: "0.1.0" # ci:mock-vllm-tag
+model:
+  servedName: small-chat
+  weightsPrefix: small-chat
+  maxModelLen: 4096
+  maxNumSeqs: 8
+sim: {loadSeconds: 20, ttftSeconds: 0.15, tokensPerSecond: 40}

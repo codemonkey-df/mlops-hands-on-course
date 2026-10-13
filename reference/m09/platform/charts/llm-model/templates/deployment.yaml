@@ -1,0 +1,104 @@
+{{- $m := .Values.model -}}
+{{- $dir := printf "/models/%s" $m.weightsPrefix -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "llm.fullname" . }}
+  labels: {{- include "llm.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  strategy:
+    # A GPU is not shared: a surge pod would sit Pending forever waiting
+    # for a second GPU. Real GPUs -> Recreate (brief downtime, or run 2+ replicas).
+    type: {{ ternary "RollingUpdate" "Recreate" .Values.mock }}
+  selector:
+    matchLabels: {{- include "llm.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "llm.labels" . | nindent 8 }}
+    spec:
+      imagePullSecrets: {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- if not .Values.mock }}
+      runtimeClassName: {{ .Values.gpu.runtimeClassName }}
+      tolerations:      # GPU nodes are usually tainted so CPU pods stay off them
+        - {key: nvidia.com/gpu, operator: Exists, effect: NoSchedule}
+      {{- end }}
+      terminationGracePeriodSeconds: 60   # let in-flight generations finish
+      initContainers:
+        # Pull the weights from MinIO BEFORE vLLM starts. The cluster never
+        # talks to the Hugging Face Hub (air-gapped, reproducible).
+        - name: fetch-weights
+          image: cgr.dev/chainguard/minio-client:latest@sha256:d8a93c5d335509ff353774eefec8f82fa2a2a975e800139702232d8be3dbe6b9
+          args: [mirror, --overwrite, "lab/{{ .Values.weights.bucket }}/{{ $m.weightsPrefix }}", {{ $dir | quote }}]
+          env:
+            - name: S3_ACCESS_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Values.weights.secretName }}, key: S3_ACCESS_KEY}}
+            - name: S3_SECRET_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Values.weights.secretName }}, key: S3_SECRET_KEY}}
+            - name: MC_HOST_lab
+              value: {{ .Values.weights.s3Endpoint | replace "://" "://$(S3_ACCESS_KEY):$(S3_SECRET_KEY)@" | quote }}
+            - {name: HOME, value: /tmp}
+          volumeMounts: [{name: models, mountPath: /models}]
+      containers:
+        - name: vllm
+          image: {{ include "llm.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.mock }}
+          command: [python, -m, mlops_course.llm.mock_vllm, serve]
+          {{- else }}
+          command: [vllm, serve]
+          {{- end }}
+          # Identical flags for mock and real: switching is ONE value.
+          args:
+            - {{ $dir }}
+            - --served-model-name={{ $m.servedName }}
+            - --max-model-len={{ int $m.maxModelLen }}
+            - --max-num-seqs={{ int $m.maxNumSeqs }}
+            - --gpu-memory-utilization={{ $m.gpuMemoryUtilization }}
+            - --tensor-parallel-size={{ int $m.tensorParallelSize }}
+            - --dtype={{ $m.dtype }}
+            - --port=8000
+            {{- range $m.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          env:
+            - {name: HF_HUB_OFFLINE, value: "1"}       # fail fast instead of trying the internet
+            - {name: VLLM_NO_USAGE_STATS, value: "1"}  # no telemetry
+            {{- if .Values.mock }}
+            - {name: MOCK_LOAD_SECONDS, value: {{ .Values.sim.loadSeconds | quote }}}
+            - {name: MOCK_TTFT_SECONDS, value: {{ .Values.sim.ttftSeconds | quote }}}
+            - {name: MOCK_TOKENS_PER_SECOND, value: {{ .Values.sim.tokensPerSecond | quote }}}
+            {{- end }}
+          ports: [{name: http, containerPort: 8000}]
+          startupProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+            timeoutSeconds: 5   # a busy engine answers /health slowly; 1s default kills it
+          resources:
+            {{- if .Values.mock }}
+            {{- toYaml .Values.resources.mock | nindent 12 }}
+            {{- else }}
+            requests: {{- toYaml .Values.resources.real.requests | nindent 14 }}
+            limits:
+              {{- toYaml .Values.resources.real.limits | nindent 14 }}
+              nvidia.com/gpu: {{ .Values.gpu.count }}
+            {{- end }}
+          volumeMounts:
+            - {name: models, mountPath: /models, readOnly: true}
+            - {name: shm, mountPath: /dev/shm}
+      volumes:
+        - name: models
+          emptyDir: {sizeLimit: {{ .Values.weights.cacheSize }}}
+        # PyTorch/NCCL use /dev/shm between GPU workers; Docker's 64Mi default
+        # crashes tensor-parallel vLLM with "Bus error".
+        - name: shm
+          emptyDir: {medium: Memory, sizeLimit: 2Gi}

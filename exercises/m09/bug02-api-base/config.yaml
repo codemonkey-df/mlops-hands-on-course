@@ -1,0 +1,13 @@
+# Router config under test: one model group "small-chat".
+# The model's Service is "small-chat" in the same namespace, port 8000.
+model_list:
+  - model_name: small-chat
+    litellm_params:
+      model: hosted_vllm/small-chat
+      api_base: http://small-chat:8000
+      api_key: none
+      timeout: 30
+router_settings:
+  num_retries: 0
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

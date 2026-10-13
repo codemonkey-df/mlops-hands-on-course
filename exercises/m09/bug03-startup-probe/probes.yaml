@@ -1,0 +1,5 @@
+# Probe settings copied from a web service ("it starts in a second").
+probes:
+  startup: {periodSeconds: 2, failureThreshold: 5}
+  readiness: {periodSeconds: 5, failureThreshold: 2}
+  liveness: {periodSeconds: 15, failureThreshold: 4}

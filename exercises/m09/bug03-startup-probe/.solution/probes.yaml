@@ -1,0 +1,6 @@
+# startupProbe budget = periodSeconds x failureThreshold must exceed the worst
+# load time (here 30 s; real models: minutes). Liveness only starts after it.
+probes:
+  startup: {periodSeconds: 10, failureThreshold: 60}
+  readiness: {periodSeconds: 5, failureThreshold: 2}
+  liveness: {periodSeconds: 15, failureThreshold: 4}

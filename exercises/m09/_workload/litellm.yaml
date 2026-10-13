@@ -1,0 +1,22 @@
+# Router for the exercises: 1 replica, no Ingress (same as platform/gitops/llm/litellm.yaml otherwise).
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: litellm, labels: {app: litellm}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: litellm}}
+  template:
+    metadata: {labels: {app: litellm}}
+    spec:
+      containers:
+        - name: litellm
+          image: ghcr.io/berriai/litellm:v1.105.0
+          args: [--config, /etc/litellm/config.yaml, --port, "4000", --num_workers, "1"]
+          envFrom: [{secretRef: {name: litellm}}]
+          env:
+            - {name: LITELLM_LOCAL_MODEL_COST_MAP, value: "True"}
+          ports: [{name: http, containerPort: 4000}]
+          readinessProbe: {httpGet: {path: /health/readiness, port: http}, periodSeconds: 5}
+          resources: {requests: {cpu: 100m, memory: 512Mi}, limits: {memory: 1Gi}}
+          volumeMounts: [{name: config, mountPath: /etc/litellm}]
+      volumes: [{name: config, configMap: {name: litellm-config}}]
