@@ -1,0 +1,97 @@
+# Values for the official chart:  helm upgrade --install dagster dagster/dagster \
+#   --version 1.13.26 -n dagster -f platform/helm-values/dagster.yaml
+# Everything not listed keeps the chart default (`helm show values dagster/dagster`).
+
+global:
+  # Secret created by us (platform/k8s/dagster/), key: postgresql-password
+  postgresqlSecretName: dagster-postgresql
+generatePostgresqlPasswordSecret: false
+
+# ---------------------------------------------------------------- storage
+postgresql:
+  enabled: false # do NOT deploy the chart's own Postgres; use ours
+  postgresqlHost: postgres.storage.svc.cluster.local
+  postgresqlUsername: mlops
+  postgresqlDatabase: dagster
+  # SQLAlchemy 2.1 (in OUR image) maps plain postgresql:// to psycopg 3,
+  # but dagster-postgres ships psycopg2 -> pin the driver explicitly.
+  postgresqlScheme: postgresql+psycopg2
+  image: # only used by the "wait for postgres" init container
+    repository: library/postgres
+    tag: 17.11-alpine
+  service:
+    port: 5432
+
+# ---------------------------------------------------------------- user code
+dagster-user-deployments:
+  enabled: true
+  enableSubchart: true
+  deployments:
+    - name: churn # = code location name in the UI
+      image:
+        repository: mlops/dagster-code
+        tag: 0.1.0
+        # Chart default is "Always": the kubelet would try docker.io/mlops/dagster-code
+        # and fail. Imported with `k3d image import` -> use the local copy.
+        # Run pods inherit this policy (includeConfigInLaunchedRuns below).
+        pullPolicy: IfNotPresent
+      dagsterApiGrpcArgs: ["-m", "mlops_course.pipelines"]
+      port: 3030
+      envSecrets:
+        - name: dagster-lab-env
+      # Copy image + env of this deployment into every run pod it launches.
+      includeConfigInLaunchedRuns:
+        enabled: true
+      resources:
+        requests: { cpu: 100m, memory: 512Mi }
+        limits: { memory: 1Gi }
+
+# ---------------------------------------------------------------- runs
+runLauncher:
+  type: K8sRunLauncher
+  config:
+    k8sRunLauncher:
+      # Used for runs whose code location does not pass its own image config.
+      imagePullPolicy: IfNotPresent
+      # Every run = one Kubernetes Job. Training needs real memory.
+      runK8sConfig:
+        containerConfig:
+          resources:
+            requests: { cpu: 500m, memory: 1Gi }
+            limits: { memory: 3Gi }
+        jobSpecConfig:
+          ttlSecondsAfterFinished: 3600 # garbage-collect finished run Jobs
+      failPodOnRunFailure: true # Job status mirrors the Dagster run status
+
+# Queue runs and cap parallelism (protects the cluster from a big backfill).
+dagsterDaemon:
+  image:
+    pullPolicy: IfNotPresent
+  runCoordinator:
+    enabled: true
+    type: QueuedRunCoordinator
+    config:
+      queuedRunCoordinator:
+        maxConcurrentRuns: 4
+
+# ---------------------------------------------------------------- UI
+ingress:
+  enabled: true
+  ingressClassName: traefik
+  dagsterWebserver:
+    host: dagster.192.168.1.202.nip.io
+    path: /
+    pathType: Prefix
+
+# Logs of each step stay visible via `kubectl logs`; structured events are in Postgres.
+computeLogManager:
+  type: NoOpComputeLogManager
+
+telemetry:
+  enabled: false
+
+# Chart defaults pull webserver/daemon images "Always": IfNotPresent keeps the
+# lab working when the internet (or Docker Hub rate limit) is not on your side.
+dagsterWebserver:
+  image:
+    pullPolicy: IfNotPresent

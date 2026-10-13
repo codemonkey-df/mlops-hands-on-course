@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "dagster==1.13.26",
+    "dagster-k8s==0.29.26",
+    "dagster-postgres==0.29.26",
     "dagster-webserver==1.13.26",
     "duckdb>=1.5.6",
     "mlflow==3.17.1",
