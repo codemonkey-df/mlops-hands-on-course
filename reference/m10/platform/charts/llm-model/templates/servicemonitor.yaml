@@ -1,0 +1,24 @@
+{{- if .Values.metrics.serviceMonitor.enabled }}
+# Prometheus Operator CR: "scrape this Service". Without it, /metrics exists
+# on the pod but Prometheus never looks. The `release` label is how the
+# operator decides which Prometheus instance owns this monitor.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "llm.fullname" . }}
+  labels:
+    {{- include "llm.labels" . | nindent 4 }}
+    release: {{ .Values.metrics.serviceMonitor.releaseLabel }}
+spec:
+  selector:
+    matchLabels: {{- include "llm.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.metrics.serviceMonitor.interval }}
+    {{- if and .Values.mock .Values.dcgm.enabled }}
+    - port: dcgm
+      path: /metrics
+      interval: {{ .Values.metrics.serviceMonitor.interval }}
+    {{- end }}
+{{- end }}

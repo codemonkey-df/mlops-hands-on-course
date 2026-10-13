@@ -1,0 +1,18 @@
+{
+  "uid": "churn-lab",
+  "title": "Churn API (BentoML)",
+  "panels": [
+    {
+      "id": 3,
+      "type": "heatmap",
+      "title": "Predicted churn probability",
+      "targets": [
+        {
+          "expr": "sum by (le) (increase(churn_prediction_probability_bucket[5m]))",
+          "format": "heatmap",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

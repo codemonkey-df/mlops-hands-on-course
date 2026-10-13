@@ -1,0 +1,64 @@
+{
+  "uid": "vllm-lab",
+  "title": "vLLM (lab)",
+  "tags": ["mlops", "vllm"],
+  "timezone": "browser",
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "time": {"from": "now-15m", "to": "now"},
+  "templating": {"list": []},
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "Queue vs running",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum by (model_name) (vllm:num_requests_waiting)", "legendFormat": "{{model_name}} waiting", "refId": "A"},
+        {"expr": "sum by (model_name) (vllm:num_requests_running)", "legendFormat": "{{model_name}} running", "refId": "B"}
+      ]
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "TTFT p95",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum by (le, model_name) (rate(vllm:time_to_first_token_seconds_bucket[5m])))", "legendFormat": "{{model_name}}", "refId": "A"}
+      ]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "E2E latency p95",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum by (le, model_name) (rate(vllm:e2e_request_latency_seconds_bucket[5m])))", "legendFormat": "{{model_name}}", "refId": "A"}
+      ]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "KV-cache usage",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "percentunit", "max": 1}, "overrides": []},
+      "targets": [
+        {"expr": "avg by (model_name) (vllm:kv_cache_usage_perc)", "legendFormat": "{{model_name}}", "refId": "A"}
+      ]
+    },
+    {
+      "id": 5, "type": "stat", "title": "Replicas (small-chat)",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 16},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "kube_deployment_status_replicas{namespace=\"llm\", deployment=\"small-chat\"}", "refId": "A"}
+      ]
+    },
+    {
+      "id": 6, "type": "stat", "title": "Tokens / s",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 16},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(vllm:generation_tokens[1m]))", "refId": "A"}
+      ]
+    }
+  ]
+}

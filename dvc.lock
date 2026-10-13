@@ -1,0 +1,25 @@
+schema: '2.0'
+stages:
+  generate:
+    cmd: uv run python -m mlops_course.data.cli --params params.yaml --out 
+      data/raw
+    deps:
+    - path: src/mlops_course/data
+      hash: md5
+      md5: 9267c4c840ff25885d5851823ece37d5.dir
+      size: 13766
+      nfiles: 6
+    params:
+      params.yaml:
+        generate:
+          seed: 42
+          drift: 0.0
+          days: 3
+          n_customers: 10000
+          start: '2026-10-01'
+    outs:
+    - path: data/raw
+      hash: md5
+      md5: 6a83cd1da4a930c4e75c53debbd44801.dir
+      size: 225305
+      nfiles: 4

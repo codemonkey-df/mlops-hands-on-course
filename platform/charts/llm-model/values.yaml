@@ -1,0 +1,54 @@
+# One release = one model = one Deployment + Service.
+#   helm install small-chat platform/charts/llm-model -f platform/llm/small-chat.yaml
+# Why one per model? Each model needs its own GPU budget, its own scaling and
+# its own rollout. One vLLM process serves exactly one model anyway.
+
+# mock: true  -> tiny CPU image that speaks vLLM's API (this lab)
+# mock: false -> the real vllm/vllm-openai image on a GPU node
+mock: true
+
+image:
+  real: {repository: vllm/vllm-openai, tag: v0.31.0}
+  mock: {repository: harbor.local:8085/mlops/mock-vllm, tag: "0.1.0"}
+  pullPolicy: IfNotPresent
+imagePullSecrets: [{name: harbor-pull}]
+
+model:
+  # The name clients send in {"model": "..."}. It MUST match the router's
+  # `model: hosted_vllm/<servedName>` or every request is a 404.
+  servedName: small-chat
+  weightsPrefix: small-chat      # s3://<weights.bucket>/<weightsPrefix>/
+  maxModelLen: 4096              # context window; must fit in the KV cache
+  maxNumSeqs: 8                  # concurrent sequences per replica
+  gpuMemoryUtilization: 0.90     # share of GPU memory vLLM pre-allocates
+  tensorParallelSize: 1          # GPUs per replica (must equal gpu.count)
+  dtype: auto
+  extraArgs: []                  # e.g. ["--enable-prefix-caching"]
+
+weights:
+  bucket: llm-weights
+  s3Endpoint: http://minio.storage.svc.cluster.local:9000
+  secretName: llm-s3             # keys: S3_ACCESS_KEY, S3_SECRET_KEY
+  cacheSize: 2Gi                 # emptyDir limit; real models need 15-150Gi (use a PVC)
+
+# Only used by the mock: how long "loading" takes and how fast it "decodes".
+sim: {loadSeconds: 20, ttftSeconds: 0.15, tokensPerSecond: 40}
+
+gpu:
+  count: 1                       # nvidia.com/gpu limit (real mode only)
+  runtimeClassName: nvidia       # set by the NVIDIA GPU operator
+
+replicas: 1
+service: {port: 8000}
+
+resources:
+  mock: {requests: {cpu: 50m, memory: 96Mi}, limits: {memory: 256Mi}}
+  real: {requests: {cpu: "4", memory: 32Gi}, limits: {memory: 48Gi}}
+
+probes:
+  # Model loading takes seconds (mock) to 10+ minutes (70B from disk).
+  # startupProbe holds off liveness/readiness until the FIRST success:
+  # periodSeconds * failureThreshold = max load time (here 10 min).
+  startup: {periodSeconds: 10, failureThreshold: 60}
+  readiness: {periodSeconds: 5, failureThreshold: 2}
+  liveness: {periodSeconds: 15, failureThreshold: 4}

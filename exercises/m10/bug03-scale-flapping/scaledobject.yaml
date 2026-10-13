@@ -1,0 +1,17 @@
+# Symptom: replica count oscillates 1-2-1-2 every few seconds under a
+# bumpy load. Grafana waiting series is a sawtooth; users see cold starts.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+spec:
+  scaleTargetRef: {name: small-chat}
+  minReplicaCount: 1
+  maxReplicaCount: 4
+  pollingInterval: 5
+  cooldownPeriod: 5
+  triggers:
+    - type: prometheus
+      metricType: Value
+      metadata:
+        serverAddress: http://kube-prometheus-stack-prometheus.observability.svc:9090
+        threshold: "0.1"
+        query: sum(vllm:num_requests_waiting{model_name="small-chat"})

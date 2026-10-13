@@ -1,0 +1,49 @@
+# OPTIONAL bonus — not part of kustomization.yaml.
+# Real NVIDIA dcgm-exporter as a DaemonSet on GPU nodes. Metric names match
+# the mock sidecar, so the Grafana GPU dashboard works unchanged.
+#
+# Requires the NVIDIA GPU operator (or nvidia-container-toolkit on the node).
+# Apply: kubectl apply -f platform/gitops/observability/dcgm-real.optional.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: dcgm-exporter
+  namespace: observability
+spec:
+  selector:
+    matchLabels: {app: dcgm-exporter}
+  template:
+    metadata:
+      labels: {app: dcgm-exporter}
+    spec:
+      runtimeClassName: nvidia
+      tolerations:
+        - {key: nvidia.com/gpu, operator: Exists, effect: NoSchedule}
+      containers:
+        - name: exporter
+          image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.8-3.6.0-ubuntu22.04
+          ports: [{name: metrics, containerPort: 9400}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dcgm-exporter
+  namespace: observability
+  labels: {app: dcgm-exporter}
+spec:
+  selector: {app: dcgm-exporter}
+  ports: [{name: metrics, port: 9400, targetPort: metrics}]
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: dcgm-exporter
+  namespace: observability
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels: {app: dcgm-exporter}
+  endpoints:
+    - port: metrics
+      interval: 15s

@@ -1,0 +1,81 @@
+# kube-prometheus-stack 92.3.1 — sized for a 3-node k3d inside an LXC.
+# Helm release name MUST stay `kube-prometheus-stack`: that string is the
+# default ServiceMonitor selector (`release: kube-prometheus-stack`).
+# Rename the release and every custom ServiceMonitor goes silent.
+
+alertmanager:
+  enabled: false
+
+grafana:
+  adminUser: admin
+  adminPassword: lab                 # lab only; Grafana Ingress is on the LXC network
+  defaultDashboardsEnabled: true
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL           # pick up ConfigMaps from serving/llm/observability
+      folderAnnotation: grafana_folder
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [grafana.192.168.1.202.nip.io]
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {memory: 256Mi}
+
+prometheus:
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [prometheus.192.168.1.202.nip.io]
+  prometheusSpec:
+    scrapeInterval: 15s
+    retention: 12h
+    retentionSize: 4GB
+    resources:
+      requests: {cpu: 100m, memory: 400Mi}
+      limits: {memory: 1536Mi}
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests: {storage: 8Gi}
+    # Keep the default selector (match release label). Setting this to empty
+    # (`{}`) plus `serviceMonitorSelectorNilUsesHelmValues: false` would
+    # scrape EVERY ServiceMonitor — convenient, and how you silently pick
+    # up a mis-labelled one in production. We keep the label on purpose.
+    serviceMonitorSelectorNilUsesHelmValues: true
+    podMonitorSelectorNilUsesHelmValues: true
+
+# k3s does not expose these component metrics the kubeadm way.
+kubeEtcd: {enabled: false}
+kubeControllerManager: {enabled: false}
+kubeScheduler: {enabled: false}
+kubeProxy: {enabled: false}
+
+defaultRules:
+  create: true
+  rules:
+    alertmanager: false
+    etcd: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+    kubeControllerManager: false
+
+prometheusOperator:
+  resources:
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {memory: 256Mi}
+
+kube-state-metrics:
+  resources:
+    requests: {cpu: 20m, memory: 64Mi}
+    limits: {memory: 128Mi}
+
+prometheus-node-exporter:
+  resources:
+    requests: {cpu: 20m, memory: 32Mi}
+    limits: {memory: 64Mi}

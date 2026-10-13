@@ -1,0 +1,8 @@
+# DVC parameters: changing a value here makes `dvc repro` re-run the stages
+# that declared it under `params:`. Everything else stays cached.
+generate:
+  seed: 42
+  drift: 0.0          # 0.0 = reference world; try 0.6 in M11
+  days: 3             # number of daily snapshots
+  n_customers: 10000
+  start: "2026-10-01"

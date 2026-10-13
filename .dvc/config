@@ -1,0 +1,5 @@
+[core]
+    remote = minio
+['remote "minio"']
+    url = s3://dvc/store
+    endpointurl = http://s3.192.168.1.202.nip.io:8080

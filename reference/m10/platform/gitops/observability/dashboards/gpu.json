@@ -1,0 +1,49 @@
+{
+  "uid": "gpu-lab",
+  "title": "GPU (DCGM mock)",
+  "tags": ["mlops", "gpu"],
+  "timezone": "browser",
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "time": {"from": "now-15m", "to": "now"},
+  "templating": {"list": []},
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "GPU utilization %",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "percent", "max": 100}, "overrides": []},
+      "targets": [
+        {"expr": "DCGM_FI_DEV_GPU_UTIL", "legendFormat": "{{Hostname}} gpu{{gpu}}", "refId": "A"}
+      ]
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Framebuffer used (MiB)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "decmbytes"}, "overrides": []},
+      "targets": [
+        {"expr": "DCGM_FI_DEV_FB_USED", "legendFormat": "{{Hostname}} gpu{{gpu}} used", "refId": "A"},
+        {"expr": "DCGM_FI_DEV_FB_FREE", "legendFormat": "{{Hostname}} gpu{{gpu}} free", "refId": "B"}
+      ]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Temperature",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "celsius"}, "overrides": []},
+      "targets": [
+        {"expr": "DCGM_FI_DEV_GPU_TEMP", "legendFormat": "{{Hostname}} gpu{{gpu}}", "refId": "A"}
+      ]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Power (W)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "watt"}, "overrides": []},
+      "targets": [
+        {"expr": "DCGM_FI_DEV_POWER_USAGE", "legendFormat": "{{Hostname}} gpu{{gpu}}", "refId": "A"}
+      ]
+    }
+  ]
+}

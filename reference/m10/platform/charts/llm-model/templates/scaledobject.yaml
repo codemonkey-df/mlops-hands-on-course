@@ -1,0 +1,41 @@
+{{- if .Values.autoscaling.enabled }}
+# KEDA watches this CR and creates an HPA. The Prometheus scaler runs
+# `query` every pollingInterval seconds.
+#
+# metricType: Value  -> desiredReplicas = ceil(query / threshold)
+# metricType: AverageValue (KEDA default) -> query is DIVIDED by replica
+#   count first. A queue of 10 with 2 pods looks like 5/pod, so it may
+#   never scale. Queue depth is a cluster-wide number: use Value.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "llm.fullname" . }}
+  labels: {{- include "llm.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ include "llm.fullname" . }}
+  minReplicaCount: {{ int .Values.autoscaling.minReplicas }}
+  maxReplicaCount: {{ int .Values.autoscaling.maxReplicas }}
+  pollingInterval: {{ int .Values.autoscaling.pollingInterval }}
+  cooldownPeriod: {{ int .Values.autoscaling.cooldownPeriod }}
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+            - {type: Pods, value: 2, periodSeconds: 15}
+        scaleDown:
+          stabilizationWindowSeconds: {{ int .Values.autoscaling.scaleDownStabilizationSeconds }}
+          policies:
+            - {type: Percent, value: 50, periodSeconds: 60}
+  triggers:
+    - type: prometheus
+      metricType: Value
+      metadata:
+        serverAddress: {{ .Values.autoscaling.prometheusUrl | quote }}
+        threshold: {{ .Values.autoscaling.threshold | quote }}
+        # Colon is part of the real vLLM metric name. Underscores look
+        # "more Prometheus" and return nothing, so the HPA sits at min.
+        query: sum(vllm:num_requests_waiting{model_name="{{ .Values.model.servedName }}"})
+{{- end }}

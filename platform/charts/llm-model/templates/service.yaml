@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "llm.fullname" . }}
+  labels: {{- include "llm.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "llm.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http          # the ServiceMonitor (M10) scrapes this port by NAME
+      port: {{ .Values.service.port }}
+      targetPort: http

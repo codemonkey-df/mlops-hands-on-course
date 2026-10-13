@@ -1,0 +1,39 @@
+# argo-cd chart values:
+#   helm upgrade --install argocd argo/argo-cd --version 10.10.3 -n argocd \
+#     --create-namespace -f platform/argocd/values.yaml
+global:
+  domain: argocd.192.168.1.202.nip.io
+
+configs:
+  params:
+    # TLS terminates at Traefik (here: no TLS at all); the server speaks HTTP.
+    server.insecure: true
+  cm:
+    # How often Argo polls Git when no webhook arrives (default 120s + jitter).
+    timeout.reconciliation: 60s
+    timeout.reconciliation.jitter: 10s
+    # Since Argo CD 1.8 an Application has NO health of its own. Without this,
+    # app-of-apps sync waves do not wait: wave 1 starts while wave 0 is still
+    # deploying (e.g. CRs before their CRDs exist).
+    resource.customizations.health.argoproj.io_Application: |
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil and obj.status.health ~= nil then
+        hs.status = obj.status.health.status
+        if obj.status.health.message ~= nil then
+          hs.message = obj.status.health.message
+        end
+      end
+      return hs
+
+server:
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+
+# Not needed in the lab: SSO (dex) and Slack/e-mail notifications.
+dex:
+  enabled: false
+notifications:
+  enabled: false

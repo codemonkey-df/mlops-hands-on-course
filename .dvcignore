@@ -1,3 +1,6 @@
-# Add patterns of files dvc should ignore, which could improve
-# the performance. Learn more at
-# https://dvc.org/doc/user-guide/dvcignore
+# DVC must not treat the course reference/exercise copies as pipelines
+reference/
+exercises/
+# compiled bytecode changes on every import -> would invalidate code deps
+__pycache__/
+*.pyc

@@ -1,0 +1,18 @@
+# Symptom: Git has newTag mv12-abc, the cluster still runs mv7.
+# Application shows OutOfSync and stays there. kubectl edit "fixes" it
+# until the next refresh, then nothing happens.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: serving
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: http://192.168.1.202:3300/mlops/mlops.git
+    targetRevision: main
+    path: platform/gitops/serving
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: serving
+  syncPolicy: {}   # BUG: no automated sync, no selfHeal

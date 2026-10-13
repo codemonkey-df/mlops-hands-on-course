@@ -1,0 +1,18 @@
+# Scrapes BentoML's /metrics (built-in request histograms + our
+# `churn_prediction_probability` histogram from the service).
+# `release` MUST equal the kube-prometheus-stack Helm release name.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: churn
+  namespace: serving
+  labels:
+    app: churn
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels: {app: churn}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: litellm
+  labels: {app: litellm}
+spec:
+  replicas: 2                 # stateless: scale freely
+  selector: {matchLabels: {app: litellm}}
+  template:
+    metadata:
+      labels: {app: litellm}
+    spec:
+      containers:
+        - name: litellm
+          image: ghcr.io/berriai/litellm:v1.105.0
+          args: [--config, /etc/litellm/config.yaml, --port, "4000", --num_workers, "1"]
+          envFrom: [{secretRef: {name: litellm}}]
+          env:
+            # Otherwise LiteLLM downloads its model price list from GitHub at
+            # startup: hangs/fails on air-gapped clusters.
+            - {name: LITELLM_LOCAL_MODEL_COST_MAP, value: "True"}
+            - {name: LITELLM_TELEMETRY, value: "False"}
+          ports: [{name: http, containerPort: 4000}]
+          startupProbe:
+            httpGet: {path: /health/liveliness, port: http}   # sic: "liveliness"
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet: {path: /health/readiness, port: http}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health/liveliness, port: http}
+            periodSeconds: 20
+            timeoutSeconds: 5
+          resources:
+            requests: {cpu: 100m, memory: 512Mi}
+            limits: {memory: 1Gi}
+          volumeMounts: [{name: config, mountPath: /etc/litellm}]
+      volumes:
+        - name: config
+          configMap: {name: litellm-config}   # kustomize rewrites to the hashed name
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: litellm
+  labels: {app: litellm}
+spec:
+  selector: {app: litellm}
+  ports: [{name: http, port: 4000, targetPort: http}]
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: litellm
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: llm.192.168.1.202.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: litellm, port: {name: http}}}

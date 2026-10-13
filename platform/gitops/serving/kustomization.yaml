@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: serving
+resources:
+  - churn.yaml
+# The ONE line CI changes on every release (see .gitea/workflows/ci.yaml).
+images:
+  - name: churn-bento # placeholder used in churn.yaml
+    newName: harbor.local:8085/mlops/churn-bento
+    newTag: mv7-e74b05b4 # ci:churn-tag

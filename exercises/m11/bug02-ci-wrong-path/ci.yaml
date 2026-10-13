@@ -1,0 +1,14 @@
+# Symptom: CI is green, git has a new commit, Argo CD is Synced,
+# /model_info on serving still shows the previous MLflow version.
+name: ci
+on: {workflow_dispatch: {}}
+jobs:
+  deploy:
+    runs-on: mlops-ci
+    steps:
+      - name: bump image tags
+        run: |
+          # BUG: this is the M6 hand-applied manifest. Argo CD syncs
+          # platform/gitops/serving/kustomization.yaml instead.
+          sed -i -E "s|^( *newTag: ).*( # ci:churn-tag)$|\1$BENTO_TAG\2|" \
+            platform/k8s/serving/churn.yaml

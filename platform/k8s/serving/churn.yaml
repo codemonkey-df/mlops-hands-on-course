@@ -1,0 +1,80 @@
+# Churn scoring API (BentoML). The image contains code + model + deps:
+# the tag (mv7 = MLflow model version 7) fully identifies what is served.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: serving
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: churn
+  namespace: serving
+  labels: { app: churn }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: churn }
+  strategy:
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } # never drop below 2 ready pods
+  template:
+    metadata:
+      labels: { app: churn }
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: bento
+          image: mlops/churn-bento:mv7
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 3000 }
+          env:
+            - name: BENTOML_DO_NOT_TRACK
+              value: "true"
+          # Removing a pod from Endpoints/Ingress is asynchronous: without this
+          # pause the proxy still sends requests to a stopping pod -> 502s.
+          lifecycle:
+            preStop:
+              exec: { command: ["sleep", "5"] }
+          resources:
+            requests: { cpu: 250m, memory: 768Mi }
+            limits: { memory: 1536Mi } # 2 workers x (torch + model)
+          # BentoML endpoints: /livez = process alive, /readyz = model loaded.
+          startupProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 3
+            failureThreshold: 40 # up to 2 min to load the model
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /livez, port: http }
+            periodSeconds: 10
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: churn
+  namespace: serving
+  labels: { app: churn } # selected by the ServiceMonitor in M10
+spec:
+  selector: { app: churn }
+  ports:
+    - { name: http, port: 3000, targetPort: http }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: churn
+  namespace: serving
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: churn.192.168.1.202.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: churn, port: { name: http } }

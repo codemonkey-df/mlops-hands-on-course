@@ -1,0 +1,20 @@
+# Symptom: Grafana dashboards for vLLM stay empty. Prometheus targets
+# page does not list small-chat. The pod HAS /metrics (curl works).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: small-chat
+  labels:
+    app.kubernetes.io/name: llm-model
+    # BUG: the operator's Prometheus only selects ServiceMonitors with
+    # this Helm release's name. A missing/wrong value is silent.
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: llm-model
+      app.kubernetes.io/instance: small-chat
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

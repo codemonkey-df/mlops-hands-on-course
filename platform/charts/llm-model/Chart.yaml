@@ -1,0 +1,6 @@
+apiVersion: v2
+name: llm-model
+description: One vLLM Deployment serving ONE model (install the chart once per model).
+type: application
+version: 0.1.0
+appVersion: "v0.31.0"   # the vLLM version the args below are written for

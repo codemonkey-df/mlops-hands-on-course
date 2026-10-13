@@ -1,0 +1,73 @@
+# MLflow tracking server in "proxied artifact" mode:
+#
+#   client --HTTP--> mlflow server --SQL--> Postgres  (runs, metrics, registry)
+#                         \--------S3-----> MinIO     (artifacts: models, files)
+#
+# With --serve-artifacts, clients (your laptop, Dagster, BentoML) never talk to
+# MinIO directly and need NO S3 credentials: only the server has them.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow
+  namespace: mlflow
+  labels:
+    app.kubernetes.io/name: mlflow
+spec:
+  replicas: 1                      # stateless: all state is in Postgres + MinIO
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mlflow
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mlflow
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: mlflow
+          # Built locally and loaded with `k3d image import` (no registry yet).
+          # IfNotPresent is REQUIRED for imported images: with `Always` (the
+          # default for :latest tags) kubelet tries docker.io and fails.
+          image: mlops/mlflow:3.17.1-2
+          imagePullPolicy: IfNotPresent
+          command: [mlflow, server]
+          args:
+            - --host=0.0.0.0
+            - --port=5000
+            # $(PG_PASSWORD) is expanded by Kubernetes from the env below.
+            - --backend-store-uri=postgresql+psycopg://mlops:$(PG_PASSWORD)@postgres.storage.svc.cluster.local:5432/mlflow
+            - --artifacts-destination=s3://mlflow/
+            - --serve-artifacts
+            # MLflow 3 security middleware rejects unknown Host headers (DNS
+            # rebinding protection). List every name clients use, port included.
+            - --allowed-hosts=mlflow.192.168.1.202.nip.io:8080,mlflow.mlflow.svc.cluster.local:5000,mlflow.mlflow:5000,mlflow:5000,localhost:5000
+            - --workers=2
+          env:
+            - name: PG_PASSWORD
+              valueFrom: {secretKeyRef: {name: mlflow-backends, key: PG_PASSWORD}}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom: {secretKeyRef: {name: mlflow-backends, key: AWS_ACCESS_KEY_ID}}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom: {secretKeyRef: {name: mlflow-backends, key: AWS_SECRET_ACCESS_KEY}}
+            # Without this, boto3 sends artifacts to real AWS S3.
+            - name: MLFLOW_S3_ENDPOINT_URL
+              value: http://minio.storage.svc.cluster.local:9000
+          ports:
+            - name: http
+              containerPort: 5000
+          # The first start runs DB migrations (~20 s). startupProbe gives it
+          # time before liveness could kill the pod mid-migration.
+          startupProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 5
+            failureThreshold: 36       # 36 x 5 s = 3 min max to start
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 100m, memory: 512Mi}
+            limits: {memory: 2Gi}

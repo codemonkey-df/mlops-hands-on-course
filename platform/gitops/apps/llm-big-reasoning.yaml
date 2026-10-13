@@ -1,0 +1,26 @@
+# One Argo CD app per model: the shared chart + this model's values file.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: llm-big-reasoning
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2" # after the llm namespace + secrets (wave 1)
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: http://192.168.1.202:3300/mlops/mlops.git
+    targetRevision: main
+    path: platform/charts/llm-model
+    helm:
+      releaseName: big-reasoning              # -> Deployment/Service "big-reasoning"
+      valueFiles: [../../gitops/llm-models/big-reasoning.yaml]   # relative to the chart path
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: llm
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    retry:
+      limit: 5
+      backoff: {duration: 10s, factor: 2, maxDuration: 3m}

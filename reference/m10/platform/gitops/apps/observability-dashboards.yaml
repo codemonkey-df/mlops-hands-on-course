@@ -1,0 +1,25 @@
+# Dashboards only. The Prometheus/Grafana *stack* is a Helm release (CRDs,
+# operators) installed once by M10's deploy script; GitOps owns the bits
+# you will change week to week.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-dashboards
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"  # after kube-prometheus-stack exists
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: http://192.168.1.202:3300/mlops/mlops.git
+    targetRevision: main
+    path: platform/gitops/observability
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    retry:
+      limit: 5
+      backoff: {duration: 10s, factor: 2, maxDuration: 3m}

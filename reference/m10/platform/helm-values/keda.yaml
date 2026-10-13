@@ -1,0 +1,15 @@
+# KEDA 2.21.0 — operator + metrics-apiserver + webhooks.
+# CRDs (ScaledObject, TriggerAuthentication, ...) land with this chart.
+# HTTP scale-from-zero needs the separate http-add-on chart; we don't
+# install it, so minReplicaCount: 0 is a demo of "it never comes back".
+
+resources:
+  operator:
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {memory: 256Mi}
+  metricServer:
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {memory: 256Mi}
+  webhooks:
+    requests: {cpu: 20m, memory: 32Mi}
+    limits: {memory: 64Mi}

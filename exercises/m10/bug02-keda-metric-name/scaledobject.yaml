@@ -1,0 +1,24 @@
+# Symptom: load is high, Grafana shows waiting=20, but KEDA never scales
+# past minReplicaCount. `kubectl get scaledobject` is READY. The HPA metric
+# is always 0.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+spec:
+  scaleTargetRef: {name: small-chat}
+  minReplicaCount: 1
+  maxReplicaCount: 4
+  pollingInterval: 15
+  cooldownPeriod: 180
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown: {stabilizationWindowSeconds: 120}
+  triggers:
+    - type: prometheus
+      metricType: Value
+      metadata:
+        serverAddress: http://kube-prometheus-stack-prometheus.observability.svc:9090
+        threshold: "2"
+        # BUG: real vLLM names use a colon. This query is valid PromQL
+        # and returns an empty result (treated as 0 with ignoreNullValues).
+        query: sum(vllm_num_requests_waiting{model_name="small-chat"})

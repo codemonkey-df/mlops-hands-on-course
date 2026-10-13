@@ -1,0 +1,42 @@
+# LiteLLM proxy config: ONE OpenAI-compatible endpoint in front of all models.
+# Clients pick a model GROUP by name; the router picks a deployment, retries,
+# falls back and enforces timeouts.
+model_list:
+  - model_name: small-chat                  # what clients send as "model"
+    litellm_params:
+      # hosted_vllm/<name>: <name> is sent to vLLM and MUST equal its
+      # --served-model-name. api_base MUST end in /v1.
+      model: hosted_vllm/small-chat
+      api_base: http://small-chat.llm.svc.cluster.local:8000/v1
+      api_key: none                         # vLLM without --api-key accepts anything
+      timeout: 30
+    model_info: {max_input_tokens: 4096}    # used for context-window pre-checks
+  - model_name: big-reasoning
+    litellm_params:
+      model: hosted_vllm/big-reasoning
+      api_base: http://big-reasoning.llm.svc.cluster.local:8000/v1
+      api_key: none
+      timeout: 120                          # long generations on the big model
+    model_info: {max_input_tokens: 16384}
+
+router_settings:
+  routing_strategy: simple-shuffle          # spread across deployments of a group
+  num_retries: 2                            # same group, transient errors
+  retry_after: 1
+  allowed_fails: 3                          # then the deployment is cooled down...
+  cooldown_time: 30                         # ...for 30 s (traffic goes elsewhere)
+  # big-reasoning down/overloaded -> degrade to the small model (worse answer > no answer)
+  fallbacks: [{"big-reasoning": ["small-chat"]}]
+  # prompt too long for the small model -> send it to the long-context one
+  context_window_fallbacks: [{"small-chat": ["big-reasoning"]}]
+  enable_pre_call_checks: true              # check context size BEFORE calling
+
+litellm_settings:
+  drop_params: true                         # drop OpenAI params vLLM doesn't know
+  request_timeout: 180
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  # Optional: virtual keys, budgets, spend logs need Postgres (db "litellm"
+  # exists already). Without it the proxy is stateless.
+  # database_url: os.environ/DATABASE_URL

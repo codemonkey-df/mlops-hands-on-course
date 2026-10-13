@@ -1,0 +1,38 @@
+{
+  "uid": "churn-lab",
+  "title": "Churn API (BentoML)",
+  "tags": ["mlops", "bentoml"],
+  "timezone": "browser",
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "time": {"from": "now-15m", "to": "now"},
+  "templating": {"list": []},
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "Request rate",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
+      "targets": [
+        {"expr": "sum(rate(bentoml_service_request_duration_seconds_count[1m]))", "legendFormat": "rps", "refId": "A"}
+      ]
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Latency p95",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum by (le) (rate(bentoml_service_request_duration_seconds_bucket[5m])))", "legendFormat": "p95", "refId": "A"}
+      ]
+    },
+    {
+      "id": 3, "type": "heatmap", "title": "Predicted churn probability",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum by (le) (increase(churn_prediction_probability_bucket[5m]))", "format": "heatmap", "legendFormat": "{{le}}", "refId": "A"}
+      ]
+    }
+  ]
+}

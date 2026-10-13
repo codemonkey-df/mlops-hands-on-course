@@ -1,0 +1,10 @@
+name: ci
+on: {workflow_dispatch: {}}
+jobs:
+  deploy:
+    runs-on: mlops-ci
+    steps:
+      - name: bump image tags
+        run: |
+          sed -i -E "s|^( *newTag: ).*( # ci:churn-tag)$|\1$BENTO_TAG\2|" \
+            platform/gitops/serving/kustomization.yaml

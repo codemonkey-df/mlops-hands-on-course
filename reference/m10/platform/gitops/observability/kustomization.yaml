@@ -1,0 +1,20 @@
+# Grafana dashboards as ConfigMaps. The grafana sidecar in kube-prometheus-stack
+# watches ALL namespaces for `grafana_dashboard: "1"` (searchNamespace: ALL).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: observability
+configMapGenerator:
+  - name: dashboard-vllm
+    files: [vllm.json=dashboards/vllm.json]
+    options: {disableNameSuffixHash: true}
+  - name: dashboard-gpu
+    files: [gpu.json=dashboards/gpu.json]
+    options: {disableNameSuffixHash: true}
+  - name: dashboard-churn
+    files: [churn.json=dashboards/churn.json]
+    options: {disableNameSuffixHash: true}
+generatorOptions:
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: MLOps

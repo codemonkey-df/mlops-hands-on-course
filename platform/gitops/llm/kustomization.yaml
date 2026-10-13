@@ -1,0 +1,12 @@
+# Namespace-wide pieces of the LLM layer: credentials + the LiteLLM router.
+# The models themselves are separate Argo CD apps (one per model).
+namespace: llm
+resources:
+  - secrets.yaml
+  - litellm.yaml
+configMapGenerator:
+  # The generated name gets a content hash (litellm-config-7f9c...). Changing
+  # config.yaml -> new name -> Deployment spec changes -> pods restart.
+  # A plain ConfigMap would change silently and LiteLLM would keep the old config.
+  - name: litellm-config
+    files: [config.yaml]
