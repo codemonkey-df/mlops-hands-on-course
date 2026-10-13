@@ -31,6 +31,11 @@ spec:
           env:
             - name: BENTOML_DO_NOT_TRACK
               value: "true"
+          # Removing a pod from Endpoints/Ingress is asynchronous: without this
+          # pause the proxy still sends requests to a stopping pod -> 502s.
+          lifecycle:
+            preStop:
+              exec: { command: ["sleep", "5"] }
           resources:
             requests: { cpu: 250m, memory: 768Mi }
             limits: { memory: 1536Mi } # 2 workers x (torch + model)

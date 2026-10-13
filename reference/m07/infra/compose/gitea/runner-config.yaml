@@ -1,0 +1,24 @@
+# act_runner config (full reference: `act_runner generate-config`).
+log:
+  level: info
+runner:
+  file: /data/.runner
+  capacity: 2 # parallel jobs
+  timeout: 1h
+  # Label -> job container image. Workflows say `runs-on: mlops-ci`.
+  # Our own image (platform/images/ci-runner): no internet needed at job time.
+  labels:
+    - "mlops-ci:docker://mlops/ci-runner:1"
+cache:
+  enabled: false
+container:
+  network: "" # a fresh network per job
+  privileged: false
+  # The host's Docker socket is mounted into every job container ("" = auto),
+  # so `docker build/push` in a job uses the HOST daemon and its image cache.
+  docker_host: ""
+  # Named volume shared by all jobs: uv downloads torch & co. only once.
+  valid_volumes:
+    - mlops-uv-cache
+  options: "-v mlops-uv-cache:/cache/uv"
+  force_pull: false # mlops/ci-runner:1 exists only locally

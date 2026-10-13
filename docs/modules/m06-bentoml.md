@@ -143,7 +143,7 @@ When Dagster promotes a new champion (say v8), re-run step 4, then build with `-
 ## 4. Tweak and observe
 
 1. **Validation.** Send `"plan": "gold"` and then `"tenure_months": -1`. Read the `400` bodies: who rejected them, BentoML or the model?
-2. **Rolling update.** Change `replicas` to 3, then roll out a new tag while running `while true; do curl -s -X POST .../model_info; echo; done`. Do you see any errors? Why not? (`maxUnavailable: 0` plus the readiness probe.)
+2. **Rolling update.** Change `replicas` to 3, then roll out a new tag while running `while true; do curl -s -X POST .../model_info; echo; done`. Do you see any errors? Now remove the `preStop` hook and repeat: a few `502 Bad Gateway` errors appear while old pods stop, because Traefik is still sending them requests. Zero-downtime rollouts need `maxUnavailable: 0`, the readiness probe, **and** a short `preStop` pause.
 3. **Concurrency limit.** Set `max_concurrency: 1` and fire 20 parallel requests (`xargs -P 20`). Count the `503`s.
 4. **Score metric.** Send 100 high-risk customers, then look at `churn_prediction_probability_bucket` in `/metrics`. In M10 this becomes a Grafana panel and a drift signal.
 5. **Memory.** `kubectl top pod -n serving`. Change `workers` to 4: what happens to memory? Then compare the scaling options: more workers per pod versus more pods.
@@ -189,4 +189,5 @@ make check-m06              # bug01/02 need churn-classifier in the local BentoM
 - **Torch CPU wheels** (`--find-links`) keep the image around 1.8 GB instead of over 5 GB.
 - **`BENTOML_DO_NOT_TRACK=true`** for air-gapped and on-prem setups.
 - **Probes:** a `startupProbe` covers model loading, `readinessProbe` uses `/readyz` and `livenessProbe` uses `/livez`. Never point liveness at something that depends on the model or downstream services.
+- **`preStop: sleep 5`**: endpoint removal is asynchronous, so without it rollouts cause brief 502s.
 - **Memory = workers × model size.** Size limits for the *worst* case, and prefer more pods over more workers.

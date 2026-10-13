@@ -1,0 +1,1 @@
+harbor.local:8085/mlops/smoke:1

@@ -14,3 +14,4 @@ mlruns/
 infra/compose/harbor/installer/
 platform/k3d/cluster.yaml
 .catchup-backup/
+infra/compose/harbor/robots.env

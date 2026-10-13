@@ -1,0 +1,94 @@
+# CI: lint + test, then build and push images to Harbor.
+# GitHub Actions syntax: the same file works on GitHub with a self-hosted
+# runner (copy to .github/workflows/ and change `runs-on`).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # PUSH name: the host Docker daemon only allows plain HTTP to 127.0.0.0/8.
+  # The cluster PULLS the same images as harbor.local:8085/... (k3d mirror).
+  REGISTRY: 127.0.0.1:8085
+  PROJECT: mlops
+  BENTOML_DO_NOT_TRACK: "true"
+  MLFLOW_DISABLE_AGENT_HINT: "1"
+  MLFLOW_ENABLE_PROXY_MULTIPART_DOWNLOAD: "false"
+
+# A new push to the same branch cancels the previous, now outdated, run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: mlops-ci
+    steps:
+      - name: checkout
+        # Plain git instead of actions/checkout: no action download from github.com.
+        run: |
+          git init -q . && git remote add origin "${{ github.server_url }}/${{ github.repository }}.git"
+          git -c http.extraHeader="Authorization: token ${{ github.token }}" \
+            fetch -q --depth 1 origin "${{ github.sha }}"
+          git checkout -q FETCH_HEAD && git log --oneline -1
+      - name: install
+        run: uv sync --frozen
+      - name: lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: typecheck
+        run: uv run mypy src/
+      - name: test
+        run: uv run pytest -q
+
+  images:
+    needs: test # never publish an image whose tests failed
+    runs-on: mlops-ci
+    outputs:
+      dagster_image: ${{ steps.dagster.outputs.image }}
+      bento_image: ${{ steps.bento.outputs.image }}
+    steps:
+      - name: checkout
+        run: |
+          git init -q . && git remote add origin "${{ github.server_url }}/${{ github.repository }}.git"
+          git -c http.extraHeader="Authorization: token ${{ github.token }}" \
+            fetch -q --depth 1 origin "${{ github.sha }}"
+          git checkout -q FETCH_HEAD
+      - name: login to Harbor
+        run: |
+          set -x
+          docker login "$REGISTRY" -u "${{ secrets.HARBOR_USER }}" -p "${{ secrets.HARBOR_PASSWORD }}"
+      - name: tag
+        id: tag
+        # Immutable, traceable tag: the commit. Never `latest`.
+        run: echo "sha=$(git rev-parse --short=8 HEAD)" >> "$GITHUB_OUTPUT"
+      - name: dagster code image
+        id: dagster
+        run: |
+          image="$REGISTRY/$PROJECT/dagster-code:${{ steps.tag.outputs.sha }}"
+          docker build -f platform/images/dagster-code/Dockerfile -t "$image" .
+          docker push "$image"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+      - name: bento image
+        id: bento
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+        run: |
+          uv sync --frozen
+          tag=$(uv run python -m mlops_course.serving.import_model --alias champion 2>&1 \
+                | grep -oE "churn-classifier:mv[0-9]+" | tail -1)
+          ver="${tag#churn-classifier:}-${{ steps.tag.outputs.sha }}"   # mv7-1a2b3c4d
+          uv run bentoml build -f platform/bento/bentofile.yaml src --version "$ver"
+          image="$REGISTRY/$PROJECT/churn-bento:$ver"
+          uv run bentoml containerize "churn:$ver" -t "$image"
+          docker push "$image"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+      - name: summary
+        run: |
+          echo "pushed ${{ steps.dagster.outputs.image }}"
+          echo "pushed ${{ steps.bento.outputs.image }}"
+          docker logout "$REGISTRY"
