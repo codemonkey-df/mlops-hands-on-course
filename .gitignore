@@ -7,7 +7,6 @@ __pycache__/
 site/
 .env
 *.env.local
-/data/
 /tmp/
 .dagster_home/
 mlruns/

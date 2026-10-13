@@ -1,0 +1,6 @@
+# DVC must not treat the course reference/exercise copies as pipelines
+reference/
+exercises/
+# compiled bytecode changes on every import -> would invalidate code deps
+__pycache__/
+*.pyc

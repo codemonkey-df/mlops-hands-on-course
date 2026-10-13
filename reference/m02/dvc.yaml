@@ -1,0 +1,11 @@
+# A DVC pipeline: stages with their inputs (deps, params) and outputs (outs).
+# `dvc repro` re-runs a stage ONLY if a dep/param hash changed since dvc.lock.
+stages:
+  generate:
+    cmd: uv run python -m mlops_course.data.cli --params params.yaml --out data/raw
+    deps:
+      - src/mlops_course/data          # code change -> new data
+    params:
+      - generate                       # the whole `generate:` section of params.yaml
+    outs:
+      - data/raw                       # tracked by DVC (cache + remote), git-ignored
