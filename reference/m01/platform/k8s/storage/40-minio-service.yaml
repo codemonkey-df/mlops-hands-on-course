@@ -1,0 +1,19 @@
+# A Service gives pods a stable virtual IP + DNS name, because pod IPs change
+# on every restart. Inside the cluster this one is reachable as
+#   minio.storage.svc.cluster.local:9000   (or just `minio:9000` from the same namespace)
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: storage
+spec:
+  type: ClusterIP                  # internal only; the Ingress below exposes it outside
+  selector:
+    app.kubernetes.io/name: minio  # traffic goes to READY pods carrying this label
+  ports:
+    - name: s3
+      port: 9000                   # port of the Service
+      targetPort: s3               # port on the pod (by name -> survives port changes)
+    - name: console
+      port: 9001
+      targetPort: console

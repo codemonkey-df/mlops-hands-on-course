@@ -46,7 +46,7 @@ check-%: ## Run break/fix verifiers: make check-m01 [BUG=bug02]
 	@scripts/check.sh $* $(BUG)
 
 verify-%: ## (maintainer) broken must fail, solution must pass: make verify-m01
-	@scripts/verify-exercises.sh $*
+	@scripts/verify-exercises.sh $* $(BUG)
 
 catchup-%: ## Copy verified reference of a module + deploy it: make catchup-m03
 	@scripts/catchup.sh $*

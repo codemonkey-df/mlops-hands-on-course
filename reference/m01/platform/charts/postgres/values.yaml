@@ -1,0 +1,36 @@
+# values.yaml = the chart's DEFAULT configuration. Users override it with
+#   helm install ... -f my-values.yaml      (file, merged on top)
+#   helm install ... --set auth.password=x  (single key, wins over files)
+
+image:
+  repository: postgres
+  tag: "17.11-alpine"       # quote tags: 17.10 unquoted is a float -> "17.1"!
+  pullPolicy: IfNotPresent
+
+auth:
+  username: mlops
+  # Leave empty to auto-generate a random password on first install
+  # (and keep it on upgrades, see templates/secret.yaml).
+  password: ""
+
+# One database per platform component; created on FIRST start only
+# (postgres runs /docker-entrypoint-initdb.d scripts only on an empty data dir).
+databases:
+  - mlflow
+  - dagster
+
+service:
+  port: 5432
+
+persistence:
+  size: 5Gi
+  storageClass: local-path
+
+resources:
+  requests: {cpu: 100m, memory: 256Mi}
+  limits: {memory: 1Gi}
+
+# Extra postgres settings passed as `-c key=value`.
+config:
+  max_connections: "200"     # Dagster opens many connections (one pool per process)
+  shared_buffers: 128MB

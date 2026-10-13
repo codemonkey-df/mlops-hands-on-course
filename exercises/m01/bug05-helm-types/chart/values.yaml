@@ -1,0 +1,5 @@
+image:
+  repository: postgres
+  tag: 17.10-alpine     # fine: contains letters -> YAML string
+  majorMinor: 17.10     # used to build the "pg-version" label
+maxConnections: 200     # passed as an environment variable

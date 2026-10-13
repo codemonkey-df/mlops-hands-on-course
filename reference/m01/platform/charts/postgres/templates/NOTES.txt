@@ -1,0 +1,11 @@
+PostgreSQL {{ .Chart.AppVersion }} is starting.
+
+In-cluster address : {{ include "postgres.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+Databases          : {{ join ", " .Values.databases }}
+User               : {{ .Values.auth.username }}
+
+Password:
+  kubectl -n {{ .Release.Namespace }} get secret {{ include "postgres.fullname" . }} -o jsonpath='{.data.password}' | base64 -d; echo
+
+psql shell:
+  kubectl -n {{ .Release.Namespace }} exec -it {{ include "postgres.fullname" . }}-0 -- psql -U {{ .Values.auth.username }} -d postgres

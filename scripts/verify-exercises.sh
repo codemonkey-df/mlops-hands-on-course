@@ -5,12 +5,14 @@
 # Usage: scripts/verify-exercises.sh m01
 set -uo pipefail
 
-module="${1:?usage: verify-exercises.sh mNN}"
+module="${1:?usage: verify-exercises.sh mNN [bugNN]}"
+only="${2:-}"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 export COURSE_ROOT="$root"
 ok=1
 for bug in "$root/exercises/$module"/bug*/; do
   name="$(basename "$bug")"
+  [[ -n "$only" && "$name" != "$only"* ]] && continue
   if (cd "$bug" && bash ./check.sh "$bug" >/dev/null 2>&1); then
     echo "  WRONG  $name: broken version passes"; ok=0
   else

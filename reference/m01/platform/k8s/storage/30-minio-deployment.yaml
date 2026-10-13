@@ -1,0 +1,69 @@
+# A Deployment keeps N identical pods running and rolls out new versions.
+# Chain of ownership:  Deployment -> ReplicaSet (one per version) -> Pods
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  namespace: storage
+  labels:
+    app.kubernetes.io/name: minio
+spec:
+  replicas: 1
+  # Recreate = kill the old pod BEFORE starting the new one.
+  # Required with a ReadWriteOnce volume: the default RollingUpdate would start
+  # the new pod first, which can't mount the volume and hangs in ContainerCreating.
+  strategy:
+    type: Recreate
+  # The selector says which pods this Deployment owns. It MUST match the
+  # template labels below and is immutable after creation.
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: minio
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: minio      # Services select pods by these labels too
+    spec:
+      securityContext:
+        runAsUser: 65532                   # chainguard images run as "nonroot" (65532)
+        runAsGroup: 65532
+        fsGroup: 65532                     # mounted volumes get this group -> writable
+      containers:
+        - name: minio
+          # MinIO stopped publishing community images in 2025. Chainguard builds
+          # it from source daily. Pin by digest: the free tier only has `latest`.
+          image: cgr.dev/chainguard/minio:latest@sha256:dc455cdd4db6e390b1b26514f15ff37681a777bf8dab41aac445a0259f751e56
+          args: [server, /data, --console-address, ":9001"]
+          ports:
+            - name: s3                     # named ports: Services/probes can refer by name
+              containerPort: 9000
+            - name: console
+              containerPort: 9001
+          envFrom:
+            - secretRef:
+                name: minio-root           # every key of the Secret becomes an env var
+          env:
+            # Public URL used in pre-signed links / console redirects.
+            - name: MINIO_BROWSER_REDIRECT_URL
+              value: http://minio.192.168.1.202.nip.io:8080
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          # readiness: "may I receive traffic?"  failing -> removed from Service endpoints
+          # liveness:  "am I stuck?"             failing -> container restarted
+          readinessProbe:
+            httpGet: {path: /minio/health/ready, port: s3}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /minio/health/live, port: s3}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          # requests: what the scheduler reserves on a node.
+          # limits:   hard ceiling. Exceed memory -> OOMKilled. Exceed CPU -> throttled.
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 1Gi}           # no CPU limit on purpose: throttling hurts latency
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: minio-data

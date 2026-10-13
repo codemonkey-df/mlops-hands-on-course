@@ -1,0 +1,9 @@
+# A Namespace is a folder for Kubernetes objects: names only need to be unique
+# inside it, and RBAC/quotas/NetworkPolicies can be scoped to it.
+# Everything "stateful and shared" (MinIO, Postgres) lives in `storage`.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: storage
+  labels:
+    course.mlops/module: m01        # labels are free-form key/values you can select on

@@ -1,0 +1,16 @@
+# A PersistentVolumeClaim asks for storage; a provisioner creates the volume.
+# k3s ships `local-path`: a directory on the node's disk. Consequences:
+#   - ReadWriteOnce: only pods on ONE node can mount it.
+#   - The pod gets pinned to the node holding the data (node affinity on the PV).
+#   - Deleting the PVC deletes the data (reclaimPolicy: Delete).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-data
+  namespace: storage
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi        # local-path doesn't enforce the size, but always declare it

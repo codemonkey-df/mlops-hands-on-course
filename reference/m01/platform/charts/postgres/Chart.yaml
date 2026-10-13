@@ -1,0 +1,7 @@
+# Chart.yaml = the chart's identity card.
+apiVersion: v2              # v2 = Helm 3/4 chart format
+name: postgres
+description: Minimal single-instance PostgreSQL for the MLOps lab (learning chart)
+type: application
+version: 0.1.0              # version of the CHART (bump when templates change)
+appVersion: "17.11"         # version of the APP it deploys (informational)

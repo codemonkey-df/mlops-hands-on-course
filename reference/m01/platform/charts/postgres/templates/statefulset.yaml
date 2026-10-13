@@ -1,0 +1,83 @@
+{{- /*
+StatefulSet vs Deployment:
+  - stable pod name (postgres-0, not postgres-7d9f8-x2k1)
+  - one PVC per replica via volumeClaimTemplates, re-attached after restarts
+  - ordered start/stop
+Use it for anything that owns data on disk.
+*/ -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "postgres.fullname" . }}
+  labels:
+    {{- include "postgres.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "postgres.fullname" . }}-headless   # gives pods DNS: postgres-0.postgres-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "postgres.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "postgres.selectorLabels" . | nindent 8 }}
+      annotations:
+        # Changing the init script changes this hash -> pod template changes ->
+        # Kubernetes restarts the pod. Without it, ConfigMap edits are ignored
+        # until something else restarts the pod.
+        checksum/initdb: {{ include (print $.Template.BasePath "/configmap-initdb.yaml") . | sha256sum }}
+    spec:
+      securityContext:
+        fsGroup: 70                   # "postgres" group in the alpine image
+      containers:
+        - name: postgres
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            {{- range $key, $value := .Values.config }}
+            - "-c"
+            - "{{ $key }}={{ $value }}"
+            {{- end }}
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom: {secretKeyRef: {name: {{ include "postgres.fullname" . }}, key: username}}
+            - name: POSTGRES_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ include "postgres.fullname" . }}, key: password}}
+            - name: POSTGRES_DB
+              value: postgres
+            # The volume root contains `lost+found` on some storage; postgres
+            # refuses a non-empty data dir, so use a sub-directory.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+          readinessProbe:
+            exec:
+              command: [sh, -c, 'pg_isready -U "$POSTGRES_USER" -d postgres']
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: [sh, -c, 'pg_isready -U "$POSTGRES_USER" -d postgres']
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: initdb
+          configMap:
+            name: {{ include "postgres.fullname" . }}-initdb
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: {{ .Values.persistence.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}

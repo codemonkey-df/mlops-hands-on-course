@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: typed-app
+  labels:
+    pg-version: {{ .Values.image.majorMinor | quote }}
+spec:
+  replicas: 0            # never actually runs; the check only validates the objects
+  selector:
+    matchLabels: {app: typed-app}
+  template:
+    metadata:
+      labels: {app: typed-app}
+    spec:
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          env:
+            - name: MAX_CONNECTIONS
+              value: {{ .Values.maxConnections | quote }}

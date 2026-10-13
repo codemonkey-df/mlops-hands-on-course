@@ -1,0 +1,10 @@
+# Lab overrides for platform/charts/postgres (merged on top of its values.yaml).
+# A fixed password keeps later modules simple (MLflow/Dagster reference it).
+auth:
+  username: mlops
+  password: mlops-pg-secret
+
+databases:
+  - mlflow
+  - dagster
+  - litellm

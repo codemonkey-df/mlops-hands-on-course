@@ -1,0 +1,5 @@
+image:
+  repository: postgres
+  tag: 17.10-alpine     # fine: contains letters -> YAML string
+  majorMinor: "17.10"   # QUOTED: unquoted 17.10 is the float 17.1
+maxConnections: 200     # passed as an environment variable

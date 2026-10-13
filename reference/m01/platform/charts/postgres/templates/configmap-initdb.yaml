@@ -1,0 +1,18 @@
+{{- /*
+The official postgres image runs every *.sql / *.sh file mounted into
+/docker-entrypoint-initdb.d, but ONLY when the data directory is empty
+(first start). Adding a database to values later will NOT create it on an
+existing volume: you'd run `CREATE DATABASE` yourself (see gotchas).
+*/ -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "postgres.fullname" . }}-initdb
+  labels:
+    {{- include "postgres.labels" . | nindent 4 }}
+data:
+  01-databases.sql: |
+    {{- range .Values.databases }}
+    CREATE DATABASE {{ . }} OWNER {{ $.Values.auth.username }};
+    {{- end }}
+    {{- /* inside `range`, "." is the list item; "$" is always the root context */}}
