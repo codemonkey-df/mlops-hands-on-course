@@ -1,0 +1,29 @@
+# Churn API: plain manifests rendered with Kustomize (image tag bumped by CI).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: serving
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1" # after wave-0 platform apps (monitoring CRDs in M10)
+  finalizers:
+    # Deleting the Application also deletes its resources (cascade).
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: http://192.168.1.202:3300/mlops/mlops.git
+    targetRevision: main
+    path: platform/gitops/serving
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: serving
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true # revert manual `kubectl edit/scale` within seconds
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff: { duration: 10s, factor: 2, maxDuration: 3m }

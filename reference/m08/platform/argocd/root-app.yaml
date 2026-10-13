@@ -1,0 +1,20 @@
+# The ONLY Application you apply by hand ("app of apps"). It syncs the
+# folder platform/gitops/apps/, which contains one Application per component.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: http://192.168.1.202:3300/mlops/mlops.git
+    targetRevision: main
+    path: platform/gitops/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true # an Application file deleted from Git -> app deleted
+      selfHeal: true

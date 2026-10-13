@@ -1,0 +1,33 @@
+# Dagster: the upstream Helm chart + OUR values file from Git (multi-source).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dagster
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://dagster-io.github.io/helm
+      chart: dagster
+      targetRevision: 1.13.26 # chart version: pinned, upgraded by a commit
+      helm:
+        releaseName: dagster # keep resource names identical to the M5 install
+        valueFiles:
+          - $values/platform/gitops/dagster/values.yaml
+    - repoURL: http://192.168.1.202:3300/mlops/mlops.git
+      targetRevision: main
+      ref: values # only provides $values, renders nothing itself
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dagster
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff: { duration: 10s, factor: 2, maxDuration: 3m }

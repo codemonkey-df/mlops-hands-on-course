@@ -1,0 +1,7 @@
+apiVersion: mlops.example.com/v1
+kind: ModelCard
+metadata:
+  name: churn-classifier
+spec:
+  model: churn-classifier
+  version: "7"

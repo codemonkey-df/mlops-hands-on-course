@@ -1,0 +1,129 @@
+# CI/CD: lint + test, build and push images to Harbor, then bump the image
+# tags in platform/gitops/ -> Argo CD deploys them (GitOps: CI never touches
+# the cluster).
+# GitHub Actions syntax: the same file works on GitHub with a self-hosted
+# runner (copy to .github/workflows/ and change `runs-on`).
+name: ci
+
+on:
+  push:
+    branches: [main]
+    # The tag-bump commit only changes platform/gitops/: don't rebuild for it.
+    paths-ignore: ["platform/gitops/**"]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # PUSH name: the host Docker daemon only allows plain HTTP to 127.0.0.0/8.
+  # The cluster PULLS the same images as harbor.local:8085/... (k3d mirror).
+  REGISTRY: 127.0.0.1:8085
+  PROJECT: mlops
+  BENTOML_DO_NOT_TRACK: "true"
+  MLFLOW_DISABLE_AGENT_HINT: "1"
+  MLFLOW_ENABLE_PROXY_MULTIPART_DOWNLOAD: "false"
+
+# A new push to the same branch cancels the previous, now outdated, run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: mlops-ci
+    steps:
+      - name: checkout
+        # Plain git instead of actions/checkout: no action download from github.com.
+        run: |
+          git init -q . && git remote add origin "${{ github.server_url }}/${{ github.repository }}.git"
+          git -c http.extraHeader="Authorization: token ${{ github.token }}" \
+            fetch -q --depth 1 origin "${{ github.sha }}"
+          git checkout -q FETCH_HEAD && git log --oneline -1
+      - name: install
+        run: uv sync --frozen
+      - name: lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: typecheck
+        run: uv run mypy src/
+      - name: test
+        run: uv run pytest -q
+
+  images:
+    needs: test # never publish an image whose tests failed
+    runs-on: mlops-ci
+    outputs:
+      dagster_tag: ${{ steps.tag.outputs.sha }}
+      bento_tag: ${{ steps.bento.outputs.tag }}
+    steps:
+      - name: checkout
+        run: |
+          git init -q . && git remote add origin "${{ github.server_url }}/${{ github.repository }}.git"
+          git -c http.extraHeader="Authorization: token ${{ github.token }}" \
+            fetch -q --depth 1 origin "${{ github.sha }}"
+          git checkout -q FETCH_HEAD
+      - name: login to Harbor
+        # Secrets go through env, never `${{ secrets.X }}` inside `run:`. The
+        # expression is pasted into the script BEFORE bash runs, so bash would
+        # expand "robot$mlops+ci" to "robot+ci" (and it is a script-injection hole).
+        # --password-stdin: the secret never appears in the process list.
+        env:
+          HARBOR_USER: ${{ secrets.HARBOR_USER }}
+          HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
+        run: printf '%s' "$HARBOR_PASSWORD" | docker login "$REGISTRY" -u "$HARBOR_USER" --password-stdin
+      - name: tag
+        id: tag
+        # Immutable, traceable tag: the commit. Never `latest`.
+        run: echo "sha=$(git rev-parse --short=8 HEAD)" >> "$GITHUB_OUTPUT"
+      - name: dagster code image
+        id: dagster
+        run: |
+          image="$REGISTRY/$PROJECT/dagster-code:${{ steps.tag.outputs.sha }}"
+          docker build -f platform/images/dagster-code/Dockerfile -t "$image" .
+          docker push "$image"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+      - name: bento image
+        id: bento
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+        run: |
+          uv sync --frozen
+          tag=$(uv run python -m mlops_course.serving.import_model --alias champion 2>&1 \
+                | grep -oE "churn-classifier:mv[0-9]+" | tail -1)
+          ver="${tag#churn-classifier:}-${{ steps.tag.outputs.sha }}"   # mv7-1a2b3c4d
+          uv run bentoml build -f platform/bento/bentofile.yaml src --version "$ver"
+          image="$REGISTRY/$PROJECT/churn-bento:$ver"
+          uv run bentoml containerize "churn:$ver" -t "$image"
+          docker push "$image"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          echo "tag=$ver" >> "$GITHUB_OUTPUT"
+      - name: summary
+        run: |
+          echo "pushed ${{ steps.dagster.outputs.image }}"
+          echo "pushed ${{ steps.bento.outputs.image }}"
+          docker logout "$REGISTRY"
+
+  deploy:
+    needs: images
+    # Only real pushes to main deploy; pull requests just build and test.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: mlops-ci
+    steps:
+      - name: bump image tags in platform/gitops
+        env:
+          DAGSTER_TAG: ${{ needs.images.outputs.dagster_tag }}
+          BENTO_TAG: ${{ needs.images.outputs.bento_tag }}
+          TOKEN: ${{ github.token }}
+        run: |
+          git init -q . && git remote add origin "${{ github.server_url }}/${{ github.repository }}.git"
+          git config http.extraHeader "Authorization: token $TOKEN"
+          git fetch -q origin main && git checkout -q -B main origin/main
+          # Lines are found by their marker comment, so the files stay hand-editable.
+          sed -i -E "s|^( *newTag: ).*( # ci:churn-tag)$|\1$BENTO_TAG\2|" platform/gitops/serving/kustomization.yaml
+          sed -i -E "s|^( *tag: ).*( # ci:dagster-tag)$|\1\"$DAGSTER_TAG\"\2|" platform/gitops/dagster/values.yaml
+          git diff --stat
+          if git diff --quiet; then echo "nothing to deploy"; exit 0; fi
+          git -c user.name=ci-bot -c user.email=ci@mlops.local \
+            commit -qam "deploy: churn-bento $BENTO_TAG, dagster-code $DAGSTER_TAG [skip ci]"
+          # main may have moved since we fetched: rebase once, then push.
+          git pull -q --rebase origin main && git push -q origin main

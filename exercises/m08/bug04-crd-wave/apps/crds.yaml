@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ex-m08-bug04-crds
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: http://192.168.1.202:3300/mlops/ex-m08-bug04.git
+    targetRevision: main
+    path: crds
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ex-m08-bug04
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true]
