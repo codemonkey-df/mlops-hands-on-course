@@ -1,0 +1,87 @@
+site_name: On-prem MLOps hands-on
+site_description: Build an on-prem MLOps platform from scratch, one component at a time.
+docs_dir: docs
+strict: true
+
+theme:
+  name: material
+  palette:
+    - scheme: slate
+      primary: indigo
+      accent: amber
+      toggle: {icon: material/weather-sunny, name: Light mode}
+    - scheme: default
+      primary: indigo
+      accent: amber
+      toggle: {icon: material/weather-night, name: Dark mode}
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - toc.follow
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - def_list
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.snippets:
+      # Pages embed real files with  --8<-- "reference/m01/..."
+      # check_paths makes `mkdocs build` fail if an embedded file disappears,
+      # so docs and code cannot drift apart silently.
+      base_path: ["."]
+      check_paths: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+nav:
+  - Home: index.md
+  - Modules:
+      - M0 Environment: modules/m00-environment.md
+      - M1 Kubernetes + Helm: modules/m01-kubernetes-helm.md
+      - M2 Data, DVC, DuckDB: modules/m02-data-dvc-duckdb.md
+      - M3 MLflow: modules/m03-mlflow.md
+      - M4 Dagster foundations: modules/m04-dagster-foundations.md
+      - M5 Dagster on Kubernetes: modules/m05-dagster-k8s.md
+      - M6 BentoML serving: modules/m06-bentoml.md
+      - M7 Gitea CI + Harbor: modules/m07-ci-harbor.md
+      - M8 ArgoCD GitOps: modules/m08-argocd.md
+      - M9 LLM serving (vLLM mock): modules/m09-llm-serving.md
+      - M10 Observability + KEDA: modules/m10-observability-keda.md
+      - M11 Capstone: modules/m11-capstone.md
+  - Cheat sheets:
+      - Gotchas: cheatsheets/gotchas.md
+      - CLI reference: cheatsheets/cli.md
+      - Troubleshooting: cheatsheets/troubleshooting.md

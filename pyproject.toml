@@ -1,0 +1,52 @@
+[project]
+name = "mlops-course"
+version = "0.1.0"
+description = "Hands-on on-prem MLOps course: Dagster, MLflow, DVC, BentoML, vLLM (mocked), ArgoCD, KEDA."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "mkdocs>=1.6,<2",          # MkDocs 2.0 drops the plugin/theme system Material relies on
+    "mkdocs-material>=9.7,<10",
+    "pytest>=8",
+    "ruff>=0.8",
+    "mypy>=1.13",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mlops_course"]
+
+[tool.uv]
+default-groups = ["dev"]
+
+# CPU-only PyTorch wheels (~200 MB instead of ~2.5 GB of CUDA libs).
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["exercises"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+exclude = ["exercises/", "reference/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]

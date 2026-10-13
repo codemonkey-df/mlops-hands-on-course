@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+site/
+.env
+*.env.local
+/data/
+/tmp/
+.dagster_home/
+mlruns/
+*.ckpt
+infra/compose/harbor/installer/
+platform/k3d/cluster.yaml
