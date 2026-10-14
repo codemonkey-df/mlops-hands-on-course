@@ -2,6 +2,7 @@
 id: V2-004
 title: Overview diagram: prom → KEDA
 status: ready
+track: core
 priority: low
 effort: S
 modules: [M10]

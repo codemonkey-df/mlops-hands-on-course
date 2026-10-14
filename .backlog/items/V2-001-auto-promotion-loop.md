@@ -2,6 +2,7 @@
 id: V2-001
 title: Auto promotion loop (registry → GitOps)
 status: ready
+track: core
 priority: high
 effort: L
 modules: [M7, M8, M11]

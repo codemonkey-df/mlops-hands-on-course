@@ -1,8 +1,18 @@
 # Course v2 backlog
 
-One item = one shippable change to the course (docs, reference code, exercises,
-or platform). Pick the next `ready` card, implement it, mark it `done`, then
-take another.
+One item = one shippable change. Pick a `ready` card, implement it, mark it
+`done`, then take another.
+
+## Two kinds of card
+
+| Track | Purpose | Rule |
+|-------|---------|------|
+| **core** | Close gaps in the existing M0–M11 path | May change platform/CI/docs; v1 still works end-to-end |
+| **elective** | Optional learning path a student can *choose* | Must **not** rewrite the default pipeline; v1 path stays the main line |
+
+Electives show **possibilities** (SLURM, Spark, …): a short module or lab a
+curious student builds *instead of or after* the default hop — not another
+mandatory hop bolted onto every run.
 
 ## Layout
 
@@ -16,13 +26,11 @@ take another.
 
 ## Workflow
 
-1. **Add** — copy `TEMPLATE.md` to `items/V2-NNN-short-slug.md`, fill every
-   section, add a row to `INDEX.md`.
+1. **Add** — copy `TEMPLATE.md` to `items/V2-NNN-short-slug.md`, set
+   `track: core` or `track: elective`, add a row to `INDEX.md`.
 2. **Pick** — choose one `ready` item (prefer higher priority / lower effort).
-3. **Do** — set `status: in-progress` in the item and in `INDEX.md`. Change
-   only what the card’s acceptance criteria require.
-4. **Done** — set `status: done`, fill **Done notes** (PR / commit / modules
-   touched). Leave the file in place as history.
+3. **Do** — set `status: in-progress` in the item and in `INDEX.md`.
+4. **Done** — set `status: done`, fill **Done notes**. Leave the file as history.
 
 Statuses: `idea` → `ready` → `in-progress` → `done` | `wontfix`
 
@@ -36,3 +44,4 @@ Statuses: `idea` → `ready` → `in-progress` → `done` | `wontfix`
 - Names which modules / paths change (`docs/`, `reference/`, `platform/`, …)
 - Has testable acceptance criteria
 - Does **not** bundle unrelated gaps (split instead)
+- **Elective:** default M0–M11 behaviour unchanged unless the learner opts in

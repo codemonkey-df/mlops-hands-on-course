@@ -2,6 +2,7 @@
 id: V2-002
 title: CI model-quality / eval gate
 status: ready
+track: core
 priority: high
 effort: M
 modules: [M7, M11]

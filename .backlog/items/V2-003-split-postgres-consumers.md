@@ -2,6 +2,7 @@
 id: V2-003
 title: Split Postgres for Dagster + LiteLLM
 status: ready
+track: core
 priority: medium
 effort: M
 modules: [M1, M5, M9]

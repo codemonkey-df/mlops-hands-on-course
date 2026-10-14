@@ -2,6 +2,7 @@
 id: V2-005
 title: Document Bento vs MinIO weight paths
 status: ready
+track: core
 priority: medium
 effort: S
 modules: [M6, M7, M9, M11]
