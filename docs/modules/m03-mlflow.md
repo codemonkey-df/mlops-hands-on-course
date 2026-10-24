@@ -99,6 +99,9 @@ kubectl -n mlflow logs deploy/mlflow | head -30      # watch the DB migrations o
 
 You should see `curl http://mlflow.$SERVER_IP.nip.io:8080/health` return `OK`, and the UI open in your browser.
 
+If the UI host, CORS, or `.env` disagree after an IP change, re-run the
+[One IP everywhere](m00-environment.md#step-4-set-your-server-ip) checklist in M0.
+
 After `make configure-ip` or any edit to the Deployment args, **re-apply** the
 manifests and wait for rollout — a running pod keeps the old `--allowed-hosts` /
 `--cors-allowed-origins` until it restarts.
