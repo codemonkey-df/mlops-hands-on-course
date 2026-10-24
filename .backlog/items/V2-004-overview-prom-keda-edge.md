@@ -1,7 +1,7 @@
 ---
 id: V2-004
 title: Overview diagram: prom → KEDA
-status: ready
+status: done
 track: core
 priority: low
 effort: S
@@ -31,9 +31,9 @@ metrics → scaler link makes KEDA look decorative.
 
 ## Acceptance criteria
 
-- [ ] Home diagram includes Prometheus → KEDA → workload
-- [ ] Wording does not contradict M10 (`metricType: Value`, min replicas)
-- [ ] Site builds (`make docs` / mkdocs) with valid mermaid
+- [x] Home diagram includes Prometheus → KEDA → workload
+- [x] Wording does not contradict M10 (`metricType: Value`, min replicas)
+- [x] Site builds (`make docs` / mkdocs) with valid mermaid
 
 ## Out of scope
 
@@ -46,4 +46,6 @@ Pure docs; safe to do anytime, including mid-course.
 
 ## Done notes
 
-_
+Merged to `dev`: home mermaid adds `prom --> keda` (kept `keda --> vllm`) plus
+one-line PromQL caption linking to M10. No platform/YAML changes.
+
