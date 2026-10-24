@@ -218,6 +218,7 @@ make check-m07     # needs Harbor + robots.env; bug02/03 also need the cluster
 
 - **Push name vs pull name** (lab only). In production use TLS and DNS, and give Harbor one name everywhere.
 - **The token realm (`hostname` in harbor.yml)** must resolve from every client, or logins fail after a 401 redirect.
+- **CI builds serving images, not Dagster.** Import `@champion`, bento build, Harbor push, GitOps tag bump — see [Model delivery paths](../cheatsheets/model-delivery.md).
 - **Immutable SHA tags**, never `latest`, plus Harbor tag immutability as a safety net.
 - **Robot accounts per purpose:** CI can push and pull, the cluster can only pull, and admin credentials stay out of automation.
 - **Secrets via `env:`** and `--password-stdin`; never inline them in `run:`, and never use `set -x` near secrets.

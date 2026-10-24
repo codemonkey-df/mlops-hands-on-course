@@ -1,7 +1,7 @@
 ---
 id: V2-005
 title: Document Bento vs MinIO weight paths
-status: ready
+status: done
 track: core
 priority: medium
 effort: S
@@ -37,9 +37,9 @@ uses and why.
 
 ## Acceptance criteria
 
-- [ ] Table (or equivalent) visible from course home or cheatsheets nav
-- [ ] M6/M9/M11 each link to it or repeat the one-liner
-- [ ] No code/platform behaviour change required for this card
+- [x] Table (or equivalent) visible from course home or cheatsheets nav
+- [x] M6/M9/M11 each link to it or repeat the one-liner
+- [x] No code/platform behaviour change required for this card
 
 ## Out of scope
 
@@ -52,4 +52,6 @@ Doc-only; good warm-up card before larger platform work.
 
 ## Done notes
 
-_
+Cheatsheet `docs/cheatsheets/model-delivery.md` (nav + home tip); cross-links
+M6/M7/M9/M11 + gotchas. Docs-only on branch
+`fix/V2-005-document-bento-vs-weights-paths`.

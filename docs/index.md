@@ -29,6 +29,12 @@ flowchart LR
     apps --> bento
 ```
 
+!!! tip "Two model delivery paths"
+    Churn Bento bakes MLflow `@champion` into the image (CI → Harbor → GitOps).
+    The vLLM mock pulls weights from MinIO via an initContainer. See
+    [Model delivery paths](cheatsheets/model-delivery.md) — Dagster does not
+    push serving images.
+
 ## Where this course was built
 
 This material was developed and verified inside a **privileged LXC container on
