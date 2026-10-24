@@ -155,7 +155,8 @@ What already works well (do not regress):
 ## Done notes
 
 Branch `fix/V2-010-critical-learner-blockers`. CORS on platform + reference
-MLflow; M1 rollout restart; M0/M3/M4 + troubleshooting for C1–C5; guards in
-`tests/test_v2_010_platform_guards.py`. Manual: CORS curl 200 + ACAO header;
-train `logreg-e20` on Training runs; Dagster `/runs` shows materialize with
-shared `DAGSTER_HOME` (sqlite count 7).
+MLflow; M1 rollout restart; M0/M3/M4 + troubleshooting for C1–C5.
+Delivery-only `tests/test_v2_010_platform_guards.py` removed after green (not
+course content). Manual: CORS curl 200 + ACAO header; train `logreg-e20` on
+Training runs; Dagster `/runs` shows materialize with shared `DAGSTER_HOME`
+(sqlite count 7).
