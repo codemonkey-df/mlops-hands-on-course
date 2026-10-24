@@ -5,7 +5,7 @@ status: done
 track: core
 priority: high
 effort: M
-modules: [M0, M1, M2, M5]
+modules: [M0, M1, M2, M3, M5]
 area: docs
 depends_on: [V2-010]
 ---

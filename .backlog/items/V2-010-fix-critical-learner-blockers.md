@@ -5,7 +5,7 @@ status: done
 track: core
 priority: high
 effort: M
-modules: [M1, M3, M4]
+modules: [M0, M1, M3, M4]
 area: docs
 depends_on: []
 ---
@@ -55,7 +55,7 @@ Platform + docs drift here wastes hours and trains the wrong mental model
 | **Symptom** | `exec: "kill": executable file not found in $PATH` |
 | **Cause** | Chainguard/distroless image has no `kill` / shell userland |
 | **Fix** | `kubectl -n storage delete pod -l app.kubernetes.io/name=minio` or `rollout restart`; watch EndpointSlices |
-| **Where** | `docs/modules/m01-kubernetes-helm.md` (currently still suggests `kill 1`) |
+| **Where** | `docs/modules/m01-kubernetes-helm.md` (was teaching `kill 1`; fixed) |
 
 ### C3. MLflow Overview “Failed to load chart data”
 
@@ -142,13 +142,13 @@ sqlite3 "$DAGSTER_HOME/history/runs.db" "SELECT count(*) FROM runs;"
 
 ## Notes
 
-**Do this before V2-001 / V2-002 / V2-008 / V2-009.**
+**Done before** V2-001 / V2-002 / V2-008 / V2-009 (was a hard prerequisite).
 
 What already works well (do not regress):
 
 - M1 bugs (selector, types, password `lookup`) match real confusion.
 - M3 allowed-hosts exercise matches Host-header failures.
-- M4 documents `DAGSTER_HOME` (needs louder empty-UI case — this card).
+- M4 documents `DAGSTER_HOME` (empty-UI dual-instance case covered by this card).
 - M5 secrets outside chart + `postgresqlScheme` match production footguns.
 - `configure-ip` / nip.io pattern is correct when used consistently.
 
