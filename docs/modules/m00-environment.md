@@ -108,6 +108,24 @@ echo "$MLFLOW_TRACKING_URI"   # should be non-empty and use your LAN IP
 `nip.io` turns `app.$SERVER_IP.nip.io` into DNS that resolves to that IP, so you
 never edit `/etc/hosts`.
 
+!!! tip "One IP everywhere (after any IP change)"
+    Cluster Ingress, MLflow `--allowed-hosts` / `--cors-allowed-origins`, and
+    `.env` (`MLFLOW_TRACKING_URI`, S3 endpoint) must all use the **same** LAN IP.
+    Drift (browser on `.201`, cluster on `.202`, or empty `$SERVER_IP`) looks like
+    "site won't load" or CORS / empty UIs later.
+
+    1. `hostname -I | awk '{print $1}'` — note the IP.
+    2. `make configure-ip` (or `SERVER_IP=x.x.x.x make configure-ip`).
+    3. Re-apply any Ingress / Deployments you already installed (M1 storage, M3
+       MLflow, …) so live pods pick up the new hosts.
+    4. `set -a && source .env && set +a` and confirm `$SERVER_IP` /
+       `$MLFLOW_TRACKING_URI` match that IP.
+    5. Prove Traefik locally (DNS aside):  
+       `curl -sS -o /dev/null -w '%{http_code}\n' -H "Host: whoami.$SERVER_IP.nip.io" http://127.0.0.1:8080`  
+       (after the whoami smoke in Step 6, or use `minio` / `mlflow` Host once those exist).
+
+    Full symptom table: [Troubleshooting](../cheatsheets/troubleshooting.md#ip-ingress-drift).
+
 ### Step 5: Create the cluster
 
 ```bash

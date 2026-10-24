@@ -87,6 +87,11 @@ Clear or rename the parts of `src/` / `platform/` you want to redo. Open the
 site, start at **M0**, recreate files from the page into your folders, then
 `make check-mNN`. Peek `reference/` only when stuck.
 
+Do **not** run bare `uv run pytest` or `make precommit` until you have caught
+up (or finished) later modules — `tests/` imports `training`, `pipelines`,
+`serving`, …. Use the module’s own file instead, e.g.
+`uv run pytest -q tests/test_data_generator.py` in M2.
+
 **B — Faster (cluster / code already present)**  
 Keep the solved tree. Still read foundations and gotchas on each page, and
 **do every exercise**: `make check-m00`, `check-m01`, … That is where most of

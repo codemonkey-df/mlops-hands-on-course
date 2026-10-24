@@ -121,7 +121,24 @@ kubectl -n storage get endpointslices           # the pod IP behind Service mini
 You should see:
 
 - `curl -s -o /dev/null -w '%{http_code}' http://s3.$SERVER_IP.nip.io:8080/minio/health/ready` returns `200`;
-- the console at `http://minio.<LXC-IP>.nip.io:8080` (log in with `mlops` / `mlops-minio-secret`) lists 5 buckets.
+- the console at `http://minio.$SERVER_IP.nip.io:8080` lists 5 buckets.
+
+!!! tip "Console login and buckets"
+    Console user/password are the Secret keys in `10-minio-secret.yaml`
+    (`MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` → lab defaults `mlops` /
+    `mlops-minio-secret`). The Job `60-minio-buckets-job.yaml` creates the five
+    buckets (`datasets`, `dvc`, `mlflow`, `dagster`, `llm-weights`) with
+    `mc mb --ignore-existing` — they are not created by opening the console.
+
+!!! warning "Debug order: MinIO before the buckets Job"
+    If `minio` flips Running → Error, or `minio-buckets` keeps retrying, fix
+    **MinIO first** (`kubectl -n storage logs deploy/minio --previous`). Common
+    causes: `MINIO_ROOT_PASSWORD` shorter than 8 characters, wrong Secret keys,
+    or volume/`runAsUser` for the Chainguard image. Ignore the Job until MinIO
+    is Ready.
+
+If hosts fail after an IP change, use the
+[One IP everywhere](m00-environment.md#step-4-set-your-server-ip) checklist.
 
 ### Part B: Postgres with your own Helm chart
 
@@ -193,6 +210,11 @@ helm list -n storage
 kubectl -n storage exec -it postgres-0 -- psql -U mlops -d postgres -c '\l'
 ```
 
+You never install the overrides file alone; you always pass `-f` on
+`helm upgrade --install` (that *is* the install). `_helpers.tpl` / `include`
+keep labels and names DRY; `lookup` in `secret.yaml` reuses an existing
+password so upgrades do not rotate it.
+
 You should see the databases `mlflow`, `dagster` and `litellm` owned by `mlops`.
 
 !!! tip "`upgrade --install` everywhere"
@@ -206,7 +228,7 @@ git add platform/ && git commit -m "m01: minio + postgres" && git tag m01-done
 
 ## 4. Tweak and observe
 
-1. **Self-healing.** Run `kubectl -n storage delete pod -l app.kubernetes.io/name=minio` and watch `get pods -w`. A new pod with a new name appears. Are your buckets still there? (Yes: the PVC survived.)
+1. **Self-healing.** In one terminal start `kubectl -n storage get pods -w`, then in another run `kubectl -n storage delete pod -l app.kubernetes.io/name=minio`. A new pod with a new name appears. Are your buckets still there? (Yes: the PVC survived.) Always include `-n storage` — a watch in the default namespace shows nothing.
 2. **Statefulness.** Run `kubectl -n storage delete pod postgres-0`. The replacement is named `postgres-0` again and re-mounts `data-postgres-0`.
 3. **Readiness in action.** Chainguard/distroless MinIO has no process-signal tools (or shell) in `$PATH`, so do **not** `kubectl exec` a kill into the container. Instead run `kubectl -n storage rollout restart deploy/minio` while watching `kubectl -n storage get endpointslices -w`. The pod IP disappears from the endpoints until the new pod is Ready.
 4. **Helm history.** Change `config.max_connections` to `"300"` in your values, `helm upgrade` it, then run `helm history postgres -n storage`, then `helm rollback postgres 1 -n storage`. Check the setting with `psql -c 'show max_connections'`.
@@ -215,27 +237,39 @@ git add platform/ && git commit -m "m01: minio + postgres" && git tag m01-done
 
 ## 5. Break and fix
 
-Each folder in `exercises/m01/` deploys into its own throw-away namespace `ex-m01-bugNN` and deletes it afterwards.
+Each folder in `exercises/m01/` deploys into its own throw-away namespace
+`ex-m01-bugNN` (only while the check runs, then deleted). When you inspect by
+hand, pass that namespace explicitly — e.g. bug01 → `-n ex-m01-bug01`.
 
 ```bash
 make check-m01             # all six (about 4 min)
 make check-m01 BUG=bug02   # one
 ```
 
-**bug01-service-selector.** Symptom: the pod is `1/1 Running`, but `curl minio:9000` from inside the cluster times out.
+Before bug01, remember the traffic path:
+
+```text
+Pod labels  →  Service selector  →  Endpoints / EndpointSlices
+```
+
+If the selector matches nothing, the YAML is still “valid” and you get **zero
+endpoints** — `kubectl -n ex-m01-bug01 get endpoints` (or `endpointslices`) is
+the smoking gun. (`kubectl get pods -A` lists every namespace when you lose track.)
+
+**bug01-service-selector** (`-n ex-m01-bug01`). Symptom: the pod is `1/1 Running`, but `curl minio:9000` from inside the cluster times out.
 
 ??? tip "Hint"
-    `kubectl get endpointslices` for the Service. How many endpoints are there? Compare `kubectl get pods --show-labels` with the Service's `spec.selector`.
+    `kubectl -n ex-m01-bug01 get endpointslices` for the Service. How many endpoints are there? Compare `kubectl -n ex-m01-bug01 get pods --show-labels` with the Service's `spec.selector`.
 
 ??? success "Solution"
     The Service selects `app: minio`, but the pods carry `app.kubernetes.io/name: minio`. A selector that matches nothing is valid YAML, so Kubernetes gives no error and simply no endpoints.
 
-**bug02-target-port.** Symptom: the endpoints exist, but connections are refused.
+**bug02-target-port** (`-n ex-m01-bug02`). Symptom: the endpoints exist, but connections are refused.
 
 ??? success "Solution"
     `targetPort: 9090`: nothing listens there. Use the **named** port `s3`. Named ports keep working if the container port ever changes.
 
-**bug03-oomkilled.** Symptom: `CrashLoopBackOff`, and the restart count climbs.
+**bug03-oomkilled** (`-n ex-m01-bug03`). Symptom: `CrashLoopBackOff`, and the restart count climbs.
 
 ??? tip "Hint"
     `kubectl describe pod` shows `Last State: Terminated, Reason: OOMKilled, Exit Code: 137`.
@@ -243,20 +277,23 @@ make check-m01 BUG=bug02   # one
 ??? success "Solution"
     A memory limit of 24Mi is far too small for MinIO. Set the request to `128Mi` and the limit to `512Mi`. Also note what the API server enforces: `requests` must be at most `limits`.
 
-**bug04-secret-key.** Symptom: the pod is stuck in `CreateContainerConfigError`.
+**bug04-secret-key** (`-n ex-m01-bug04`). Symptom: the pod is stuck in `CreateContainerConfigError`.
 
 ??? success "Solution"
     `secretKeyRef.key: password` doesn't exist in the Secret (the key is `MINIO_ROOT_PASSWORD`). `kubectl describe pod` says `couldn't find key password in Secret`.
 
-**bug05-helm-types.** Symptom: `helm template` works, but applying fails with `cannot unmarshal number into Go struct field ... of type string`.
+**bug05-helm-types** (`-n ex-m01-bug05`). Symptom: `helm template` works, but applying fails with `cannot unmarshal number into Go struct field ... of type string`.
 
 ??? tip "Hint"
-    There are two bugs. Label values and env values must be **strings**. And what is `17.10` in YAML?
+    `helm template` succeeds; `kubectl apply` fails on **types**. Label values and env values must be **strings**. And what is `17.10` in YAML? (Unquoted it becomes float `17.1`.)
 
 ??? success "Solution"
     Use `{{ .Values.maxConnections | quote }}` for the env var, and `{{ .Values.image.majorMinor | quote }}` for the label, *plus* quote `"17.10"` in values.yaml. Unquoted, it's the float `17.1`, and quoting it in the template would only produce `"17.1"`.
 
-**bug06-helm-password.** Symptom: after every `helm upgrade`, all database clients fail authentication.
+**bug06-helm-password** (`-n ex-m01-bug06`). Symptom: after every `helm upgrade`, all database clients fail authentication.
+
+??? tip "Hint"
+    Compare with your platform Postgres chart: `templates/secret.yaml` uses `lookup` so the password survives upgrades.
 
 ??? success "Solution"
     `randAlphaNum` runs on every render, so each upgrade generates a new password. Use `lookup` to reuse the existing Secret (exactly what your Postgres chart's `secret.yaml` does), and only generate on the very first install.
@@ -270,4 +307,5 @@ make check-m01 BUG=bug02   # one
 - **Quote everything** that must be a string in Helm templates: env values, labels, annotations, version-like numbers.
 - **Never apply what you haven't rendered:** `helm template ... | less`, or `helm diff` (plugin) on upgrades.
 - **Base64 is not encryption.** A Secret in git is a credential leak outside of labs.
+- **`kubectl top` / k9s MEM %** is usually of the **request**, not the limit — near the limit means OOM risk.
 - Debug flow for "it doesn't work": `get pods`, then `describe pod` (look at Events at the bottom), then `logs` (and `logs --previous` after a crash), then `get endpointslices`, then curl from inside with `kubectl run curl --rm -it --image=curlimages/curl -- sh`.

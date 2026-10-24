@@ -58,6 +58,21 @@ Work top-down: cluster → namespace → pod events → logs → the next hop's 
 - `PSI_ALERT` set above any real PSI (e.g. 2.0).
 - Sensor not started: code location didn't load (`validate_loadable` in tests).
 
+## IP / Ingress drift {#ip-ingress-drift}
+
+| You see | Likely cause | Fix |
+|---|---|---|
+| `curl: (6) Could not resolve host` / empty `$SERVER_IP` | IP never set, or shell missing `export` / `.env` | `hostname -I \| awk '{print $1}'`, then `make configure-ip`; `source .env` |
+| Browser opens `….201.nip.io` but cluster was built for `.202` | Ingress / CORS / `.env` disagree | Re-run the [One IP everywhere](../modules/m00-environment.md#step-4-set-your-server-ip) checklist; re-apply Ingress + MLflow Deployment |
+| nip.io fails from another network, but Traefik is up | DNS path only | `curl -H "Host: minio.$SERVER_IP.nip.io" http://127.0.0.1:8080` — if that works, the app is fine |
+
+## Python package / editable install
+
+| You see | Likely cause | Fix |
+|---|---|---|
+| `No module named 'mlops_course'` with `uv run python` | Broken or empty editable install (`pytest` still works via `pythonpath = ["src"]`) | `uv sync --reinstall-package mlops-course`, or `PYTHONPATH=src uv run python …` |
+| Bare `uv run pytest` ImportError for `training` / `pipelines` / `serving` mid Path A | Repo `tests/` covers later modules; your tree only has what you've built | Run the **current** module file, e.g. `uv run pytest -q tests/test_data_generator.py`; `make catchup-mNN` or finish modules before `make precommit` |
+
 ## MLflow / MinIO / Dagster empty UI (M1–M4)
 
 | You see | Likely cause | Fix |
@@ -67,6 +82,7 @@ Work top-down: cluster → namespace → pod events → logs → the next hop's 
 | Overview “Failed to load chart data” after a good train | MLflow 3 GenAI **Overview**; classic experiments live under **Runs** | Open **Experiments → churn → Runs**, not Overview |
 | Train OK, MLflow UI empty / local `./mlruns/` | `MLFLOW_TRACKING_URI` not in process env (`.env` feeds S3 via pydantic, not MLflow) | `set -a && source .env && set +a` in **every** shell before `uv run … train` |
 | Materialize prints success; UI `/runs` empty | CLI used a different/`unset` `DAGSTER_HOME` than `dagster dev` | Same `export DAGSTER_HOME=$PWD/.dagster_home` in every terminal; `sqlite3 "$DAGSTER_HOME/history/runs.db" "SELECT count(*) FROM runs;"` |
+| Pod ~96% MEM in `kubectl top` / k9s | That % is usually of the **request**, not the limit | Near the **limit** → OOM risk; compare `kubectl describe pod` requests vs limits |
 
 ## Disk / RAM
 
