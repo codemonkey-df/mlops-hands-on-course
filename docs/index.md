@@ -21,6 +21,7 @@ flowchart LR
         minio -->|"fake weights via initContainer"| vllm
         keda[KEDA] --> vllm
         prom[Prometheus] --> grafana[Grafana]
+        prom --> keda
         bento --> prom
         vllm --> prom
         dcgm["DCGM mock exporter"] --> prom
@@ -28,6 +29,14 @@ flowchart LR
     apps[ClientApps] --> router
     apps --> bento
 ```
+
+KEDA scales vLLM from Prometheus PromQL (see [M10](modules/m10-observability-keda.md)).
+
+!!! tip "Two model delivery paths"
+    Churn Bento bakes MLflow `@champion` into the image (CI → Harbor → GitOps).
+    The vLLM mock pulls weights from MinIO via an initContainer. See
+    [Model delivery paths](cheatsheets/model-delivery.md) — Dagster does not
+    push serving images.
 
 ## Where this course was built
 

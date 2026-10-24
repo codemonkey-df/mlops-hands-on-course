@@ -33,7 +33,7 @@ sequenceDiagram
 ## 2. Foundations
 
 Promotion is not deployment
-:   Moving `@champion` in MLflow changes a pointer in the registry. The running pods still have the **old weights baked into the image**. Serving updates only when CI builds a new image and Argo CD syncs it.
+:   Moving `@champion` in MLflow changes a pointer in the registry. The running pods still have the **old weights baked into the image**. Serving updates only when CI builds a new image and Argo CD syncs it. Dagster does not push that image — [Model delivery paths](../cheatsheets/model-delivery.md).
 
 GitOps closes the loop
 :   CI never talks to the cluster. The cluster pulls the image whose tag is in Git. If CI writes the tag to the wrong file, Argo CD is "Synced" and "Healthy" — serving the previous version.

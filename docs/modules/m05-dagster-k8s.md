@@ -112,6 +112,16 @@ Then override only what you need:
 --8<-- "reference/m05/platform/helm-values/dagster.yaml"
 ```
 
+!!! tip "Overrides vs defaults"
+    Official values live **outside** this repo (`helm show values dagster/dagster`);
+    `platform/helm-values/dagster.yaml` is only your overrides. Nesting follows the
+    chart schema (e.g. `global.postgresqlSecretName` vs top-level
+    `generatePostgresqlPasswordSecret` — same idea, different keys). Repeating
+    chart defaults (`enabled: true`) in `-f` is optional. Method: list needs →
+    search the defaults → keep the smallest `-f` → check with `helm template`
+    and `helm get values --all` after install. You never install the overrides
+    file alone; always pass `-f` on `helm upgrade --install`.
+
 !!! bug "A real error hit while writing this module"
     Run pods crashed with `ModuleNotFoundError: No module named 'psycopg'`. **SQLAlchemy 2.1** (pulled in by our lockfile) maps `postgresql://` to the psycopg **3** driver, but `dagster-postgres` installs psycopg**2**. The official webserver image still has SQLAlchemy 2.0, so the UI worked and only *our* pods failed. The fix is `postgresqlScheme: postgresql+psycopg2`. It's the same root cause as MLflow in M3.
 

@@ -31,7 +31,7 @@ One Deployment per model
 :   One vLLM process serves one model. Each model gets its own GPU count, replicas, scaling and rollout. A single Helm chart, installed once per model with a different values file, keeps them consistent.
 
 Weights from object storage
-:   An **initContainer** copies the weights from MinIO into a volume before vLLM starts. The cluster never talks to the Hub, so it works air-gapped and you know exactly which bytes are served.
+:   An **initContainer** copies the weights from MinIO into a volume before vLLM starts. The cluster never talks to the Hub, so it works air-gapped and you know exactly which bytes are served. Unlike churn Bento (model baked into the image at CI build time), this is pull-at-pod-start — [Model delivery paths](../cheatsheets/model-delivery.md).
 
 startupProbe
 :   Holds off liveness and readiness until the **first** success. `periodSeconds x failureThreshold` is the maximum load time. Without it, a liveness probe kills a pod that is still loading 40 GB of weights, forever.

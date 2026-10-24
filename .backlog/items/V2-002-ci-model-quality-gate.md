@@ -52,11 +52,18 @@ predict) catches “champion in registry, broken in the image” failures.
 - Full shadow traffic / online A/B
 - Auto-rollback on Grafana drift (observability card later)
 - Auto promotion trigger → **V2-001**
+- Full lm-eval-harness / vLLM throughput labs → **V2-008** Epic 3
+  (elective). This card stays a **tiny CI holdout** on the core release
+  path; do not grow it into the systems-engineer eval curriculum.
 
 ## Notes
 
 Prefer reusing training metrics code under `src/mlops_course/` so CI and
 Dagster do not diverge. Keep the eval set tiny for lab runtime.
+
+**Boundary vs V2-008 task-19:** core CI gate (this card) vs elective
+Dagster asset that runs harness eval on Slurm and logs to MLflow. Shared
+idea (catch regression); different place in the stack.
 
 ## Done notes
 

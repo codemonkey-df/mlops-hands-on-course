@@ -138,7 +138,7 @@ git add src tests platform pyproject.toml uv.lock .env.example && git commit -m 
 
 ### Releasing a new model
 
-When Dagster promotes a new champion (say v8), re-run step 4, then build with `--version mv8`, containerize with `-t mlops/churn-bento:mv8`, import, and change the image tag in the Deployment. M7 puts this in CI, and M8 makes the tag change a Git commit.
+When Dagster promotes a new champion (say v8), re-run step 4, then build with `--version mv8`, containerize with `-t mlops/churn-bento:mv8`, import, and change the image tag in the Deployment. M7 puts this in CI, and M8 makes the tag change a Git commit. Dagster does not push serving images — compare with the MinIO/initContainer path in [Model delivery paths](../cheatsheets/model-delivery.md).
 
 ## 4. Tweak and observe
 
@@ -180,7 +180,7 @@ make check-m06              # bug01/02 need churn-classifier in the local BentoM
 
 ## 6. Gotchas and best practices
 
-- **Resolve the alias at build time.** The image tag (`mv7`) then says what is served, and `/model_info` confirms it.
+- **Resolve the alias at build time.** The image tag (`mv7`) then says what is served, and `/model_info` confirms it. Full comparison with LLM weights: [Model delivery paths](../cheatsheets/model-delivery.md).
 - **`BentoModel("...:latest")`** means the most recently *imported* model in the local store, not the highest version. Build in a clean environment (CI) or pin an exact tag.
 - **Smoke-test the container**, not only `bentoml serve`: local environments hide missing files.
 - **Signature dtypes:** cast at the edge (`astype`); `int64` versus `int32` is the classic failure.

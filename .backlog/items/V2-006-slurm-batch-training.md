@@ -1,7 +1,7 @@
 ---
 id: V2-006
 title: Elective — SLURM batch / GPU training path
-status: idea
+status: wontfix
 track: elective
 priority: medium
 effort: L
@@ -56,12 +56,10 @@ unchanged.
 
 ## Notes
 
-**Track = elective.** Show a possibility; do not over-engineer the v1
-workflow.
-
-Pairs with **V2-007** (distributed *data*); this card is distributed /
-HPC *compute*. Students may take neither, one, or both.
+**Superseded by [V2-008](V2-008-ai-systems-engineer-path.md)** (Epic 1 +
+Dagster → Slurm + training-on-Slurm). Keeping this file as history only —
+do not implement both.
 
 ## Done notes
 
-_
+_wontfix — folded into V2-008 (2026-10-24)._

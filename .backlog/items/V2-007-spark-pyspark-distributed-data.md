@@ -69,8 +69,10 @@ mandatory hops.
 User ask was “SCALA (or choose which fit).” Answer for the elective:
 **Spark/PySpark**; Scala is the engine, not the course language.
 
-Related: **V2-006** = HPC *compute* path; this = *data* path. Independent
-opt-ins.
+Related: **V2-008** Epic 1 = HPC *compute* (Slurm); this card = Spark
+*data* engine. Independent opt-ins. **V2-008** Epic 4 (Polars /
+datatrove / DVC corpus) is a different data elective — not a substitute
+for Spark; keep both if both audiences matter.
 
 ## Done notes
 

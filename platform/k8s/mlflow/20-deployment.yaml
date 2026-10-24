@@ -42,6 +42,8 @@ spec:
             # MLflow 3 security middleware rejects unknown Host headers (DNS
             # rebinding protection). List every name clients use, port included.
             - --allowed-hosts=mlflow.YOUR_SERVER_IP.nip.io:8080,mlflow.mlflow.svc.cluster.local:5000,mlflow.mlflow:5000,mlflow:5000,localhost:5000
+            # Browser UI POSTs with Origin; without CORS the Runs tab shows INTERNAL_ERROR.
+            - --cors-allowed-origins=http://mlflow.YOUR_SERVER_IP.nip.io:8080
             - --workers=2
           env:
             - name: PG_PASSWORD

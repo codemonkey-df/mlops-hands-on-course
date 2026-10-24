@@ -85,3 +85,5 @@ nav:
       - Gotchas: cheatsheets/gotchas.md
       - CLI reference: cheatsheets/cli.md
       - Troubleshooting: cheatsheets/troubleshooting.md
+      - Tool map: cheatsheets/tool-map.md
+      - Model delivery: cheatsheets/model-delivery.md

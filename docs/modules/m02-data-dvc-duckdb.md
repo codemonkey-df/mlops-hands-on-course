@@ -62,7 +62,15 @@ Write the tests **before** the generator. They are the specification: determinis
 --8<-- "reference/m02/tests/test_data_generator.py"
 ```
 
-`uv run pytest` fails now (with an `ImportError`). That's the point.
+Run **this module’s file only** (Path A trees are incomplete until later modules
+or `make catchup-mNN`):
+
+```bash
+uv run pytest -q tests/test_data_generator.py   # ImportError until Step 3 — that's the point
+```
+
+Do **not** run bare `uv run pytest` or `make precommit` yet: repo `tests/` also
+imports `training`, `pipelines`, `serving`, ….
 
 ### Step 3: The generator package
 
@@ -105,8 +113,8 @@ Create `src/mlops_course/data/` with these files:
     ```
 
 ```bash
-uv run pytest -q          # 8 passed
-make precommit            # ruff + mypy + pytest
+uv run pytest -q tests/test_data_generator.py   # 8 passed
+# make precommit only when the full package tree exists (or after catch-up)
 ```
 
 ### Step 4: Write to the lake and query it with DuckDB
@@ -117,18 +125,16 @@ uv run python -m mlops_course.data.cli --out s3://datasets --days 3
 
 Open the MinIO console, then the `datasets` bucket, then `churn/`. You should see three `snapshot_date=...` folders.
 
-Now query them without downloading anything:
+Now query them without downloading anything. Prefer a one-shot script (pasting a
+multi-line `with` into the REPL often raises an indent error from mixed spaces —
+that is the paste, not S3/DuckDB):
 
-```python
-uv run python
->>> from mlops_course.data.config import S3Settings
->>> from mlops_course.data.storage import duckdb_s3
->>> with duckdb_s3(S3Settings()) as con:
-...     print(con.sql("""
-...         SELECT snapshot_date, count(*) n, round(avg(churned), 3) churn_rate
-...         FROM read_parquet('s3://datasets/churn/*/*.parquet', hive_partitioning = true)
-...         GROUP BY ALL ORDER BY 1"""))
-...     print(con.sql("SELECT plan, round(avg(churned),3) FROM 's3://datasets/churn/*/*.parquet' GROUP BY 1"))
+```bash
+uv run python reference/m02/scripts/duckdb_lake_health.py
+```
+
+```python title="reference/m02/scripts/duckdb_lake_health.py"
+--8<-- "reference/m02/scripts/duckdb_lake_health.py"
 ```
 
 You should see three days with about 10,000 rows each and a churn rate of about 0.13. `basic` churns more than `pro`, as the generator intends.
