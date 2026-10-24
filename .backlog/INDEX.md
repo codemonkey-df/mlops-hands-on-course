@@ -35,7 +35,7 @@ by **V2-009** personas / starter questions.
 
 | ID | Title | Status | Note |
 |----|-------|--------|------|
-| [V2-005](items/V2-005-document-bento-vs-weights-paths.md) | Document Bento vs MinIO weight paths | done | Model-delivery cheatsheet (pending merge to `dev`) |
+| [V2-005](items/V2-005-document-bento-vs-weights-paths.md) | Document Bento vs MinIO weight paths | done | Merged to `dev` (model-delivery cheatsheet) |
 | [V2-010](items/V2-010-fix-critical-learner-blockers.md) | Fix critical learner blockers (M1 / M3 / M4) | done | Merged to `dev` (CORS, MinIO, empty UIs) |
 | [V2-011](items/V2-011-fix-learner-friction-docs.md) | Fix high learner friction (docs / pedagogy, M0–M5) | done | Merged to `dev`; depends on V2-010 |
 | [V2-006](items/V2-006-slurm-batch-training.md) | Elective: SLURM batch / GPU training path | wontfix | Superseded by V2-008 Epic 1 |

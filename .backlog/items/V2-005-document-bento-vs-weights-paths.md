@@ -53,5 +53,5 @@ Doc-only; good warm-up card before larger platform work.
 ## Done notes
 
 Cheatsheet `docs/cheatsheets/model-delivery.md` (nav + home tip); cross-links
-M6/M7/M9/M11 + gotchas. Docs-only on branch
+M6/M7/M9/M11 + gotchas. Docs-only; merged to `dev` via
 `fix/V2-005-document-bento-vs-weights-paths`.
