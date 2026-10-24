@@ -137,21 +137,32 @@ export DAGSTER_HOME=$PWD/.dagster_home && mkdir -p $DAGSTER_HOME   # run history
 uv run dagster dev -m mlops_course.pipelines.definitions -h 0.0.0.0 -p 3000
 ```
 
-Open `http://YOUR_SERVER_IP:3000`. In **Assets**, then **View global asset lineage**, you should see the graph from section 1. Then, in a second terminal (with the same `source .env` and `DAGSTER_HOME`):
+Open `http://YOUR_SERVER_IP:3000`. In **Assets**, then **View global asset lineage**, you should see the graph from section 1. Then, in a second terminal (with the same `source .env` and **the same** `DAGSTER_HOME`):
 
 ```bash
+set -a; source .env; set +a
+export DAGSTER_HOME=$PWD/.dagster_home && mkdir -p "$DAGSTER_HOME"
 M="-m mlops_course.pipelines.definitions"
 # 1. three normal days, then the reference profile (day 1)
 for d in 2026-10-01 2026-10-02 2026-10-03; do
   uv run dagster asset materialize $M --select raw_customers,clean_customers --partition $d
 done
 uv run dagster asset materialize $M --select reference_profile
+# prove the shared instance saw those runs (expect count > 0)
+sqlite3 "$DAGSTER_HOME/history/runs.db" "SELECT count(*) FROM runs;"
 # 2. turn the sensor on (or use the toggle in Automation)
 uv run dagster sensor start drift_sensor $M
 # 3. a drifted day
 uv run dagster asset materialize $M --select raw_customers,clean_customers,drift_report \
   --partition 2026-10-04 --config-json '{"ops":{"raw_customers":{"config":{"drift":0.8}}}}'
 ```
+
+!!! warning "RUN_SUCCESS but empty UI `/runs`"
+    `dagster asset materialize` can succeed against an **ephemeral** instance when
+    `DAGSTER_HOME` is unset, while `dagster dev` reads `.dagster_home` — two
+    databases, so the UI shows 0 runs. `sensor start` fails harder
+    (`DagsterHomeNotSetError`). Fix: export the same `DAGSTER_HOME=$PWD/.dagster_home`
+    in **every** terminal, then re-check with the `sqlite3` count above.
 
 Within about 30 s, **Runs** shows a `training` run tagged `trigger=drift`. It trains on the 7-day window, registers `@challenger`, and `champion_model` decides whether to promote it. Check the MLflow UI: a new version of `churn-classifier` exists.
 
@@ -230,5 +241,5 @@ make check-m04 BUG=bug03  # one bug
 - **Never read secrets at import time.** Use `dg.EnvVar`.
 - **Keep asset code free of infrastructure.** Inject resources, so tests swap S3 for `tmp_path`.
 - **`validate_loadable` in tests** catches broken Definitions before deploy.
-- **`DAGSTER_HOME` must be set** and persistent, or run history vanishes on restart (M5 moves it to Postgres).
+- **`DAGSTER_HOME` must be set** and the **same path** in every terminal (`$PWD/.dagster_home`), or materialize can print success while the UI `/runs` stays empty (ephemeral vs UI instance). M5 moves storage to Postgres.
 - **Selection strings:** `--select a,b` on the CLI. In Python, pass a list: `["a", "b"]`, not `"a b"`.

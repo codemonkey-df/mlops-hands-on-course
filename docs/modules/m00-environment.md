@@ -97,6 +97,14 @@ cp -n .env.example .env            # then open .env if you need to adjust secret
 export SERVER_IP=$(hostname -I | awk '{print $1}')   # useful in every shell
 ```
 
+In **every** new shell that runs course commands, load `.env` so tracking URIs
+and S3 settings match the cluster (M3/M4 silent empty-UI failures often start here):
+
+```bash
+set -a && source .env && set +a
+echo "$MLFLOW_TRACKING_URI"   # should be non-empty and use your LAN IP
+```
+
 `nip.io` turns `app.$SERVER_IP.nip.io` into DNS that resolves to that IP, so you
 never edit `/etc/hosts`.
 

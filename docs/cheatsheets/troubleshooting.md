@@ -58,6 +58,16 @@ Work top-down: cluster → namespace → pod events → logs → the next hop's 
 - `PSI_ALERT` set above any real PSI (e.g. 2.0).
 - Sensor not started: code location didn't load (`validate_loadable` in tests).
 
+## MLflow / MinIO / Dagster empty UI (M1–M4)
+
+| You see | Likely cause | Fix |
+|---|---|---|
+| Runs tab `INTERNAL_ERROR` (CORS) | Missing `--cors-allowed-origins=http://mlflow.<IP>.nip.io:8080` | Add the flag next to `--allowed-hosts`, `kubectl apply -f platform/k8s/mlflow/`, rollout; smoke with the Origin curl in M3 |
+| `exec: "kill": executable file not found` on MinIO | Distroless/Chainguard image has no `kill` | `kubectl -n storage rollout restart deploy/minio` (or `delete pod -l app.kubernetes.io/name=minio`); watch EndpointSlices |
+| Overview “Failed to load chart data” after a good train | MLflow 3 GenAI **Overview**; classic experiments live under **Runs** | Open **Experiments → churn → Runs**, not Overview |
+| Train OK, MLflow UI empty / local `./mlruns/` | `MLFLOW_TRACKING_URI` not in process env (`.env` feeds S3 via pydantic, not MLflow) | `set -a && source .env && set +a` in **every** shell before `uv run … train` |
+| Materialize prints success; UI `/runs` empty | CLI used a different/`unset` `DAGSTER_HOME` than `dagster dev` | Same `export DAGSTER_HOME=$PWD/.dagster_home` in every terminal; `sqlite3 "$DAGSTER_HOME/history/runs.db" "SELECT count(*) FROM runs;"` |
+
 ## Disk / RAM
 
 ```bash
