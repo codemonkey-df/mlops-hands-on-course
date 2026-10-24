@@ -42,6 +42,7 @@ The short list worth remembering. Each module page has the longer version.
 ## Serving (M6)
 
 - Resolve `@champion` at **build** time. The image tag then says what is served.
+- Bento (bake) vs MinIO initContainer (pull): [Model delivery paths](model-delivery.md). Dagster does not push serving images.
 - `BentoModel("...:latest")` is the most recently *imported* model, not the highest version.
 - Signature dtypes: cast at the edge. `int64` vs `int32` is the classic 500.
 - `preStop: sleep 5` — endpoint removal is asynchronous.
