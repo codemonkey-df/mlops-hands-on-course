@@ -1,7 +1,7 @@
 ---
 id: V2-010
 title: Fix critical learner blockers (M1 / M3 / M4)
-status: ready
+status: done
 track: core
 priority: high
 effort: M
@@ -123,15 +123,16 @@ sqlite3 "$DAGSTER_HOME/history/runs.db" "SELECT count(*) FROM runs;"
 
 ## Acceptance criteria
 
-- [ ] Platform + reference MLflow Deployment include CORS flag; survives
+- [x] Platform + reference MLflow Deployment include CORS flag; survives
       `configure-ip` / IP placeholder substitution
-- [ ] M1 no longer teaches `exec … kill 1` on MinIO; distroless-safe demo works
-- [ ] M3 docs: CORS beside allowed-hosts; Runs vs Overview; `.env` / URI asymmetry
-- [ ] M4 docs: empty-UI / dual-instance failure mode + count check
-- [ ] Troubleshooting cheatsheet has a row for each of C1–C5
-- [ ] Manual smoke: train → run visible under Runs; CORS curl returns 200;
+- [x] M1 no longer teaches `exec … kill 1` on MinIO; distroless-safe demo works
+- [x] M3 docs: CORS beside allowed-hosts; Runs vs Overview; `.env` / URI asymmetry
+- [x] M4 docs: empty-UI / dual-instance failure mode + count check
+- [x] Troubleshooting cheatsheet has a row for each of C1–C5
+- [x] Manual smoke: train → run visible under Runs; CORS curl returns 200;
       Dagster materialize appears in UI when `DAGSTER_HOME` matches
-- [ ] `make check-m01` / `check-m03` / `check-m04` (touched) still pass
+- [x] `make check-m01` / `check-m03` / `check-m04` (touched) still pass
+      (maintainer `make verify-m01` / `verify-m03` / `verify-m04`)
 
 ## Out of scope
 
@@ -153,4 +154,9 @@ What already works well (do not regress):
 
 ## Done notes
 
-_
+Branch `fix/V2-010-critical-learner-blockers`. CORS on platform + reference
+MLflow; M1 rollout restart; M0/M3/M4 + troubleshooting for C1–C5.
+Delivery-only `tests/test_v2_010_platform_guards.py` removed after green (not
+course content). Manual: CORS curl 200 + ACAO header; train `logreg-e20` on
+Training runs; Dagster `/runs` shows materialize with shared `DAGSTER_HOME`
+(sqlite count 7).

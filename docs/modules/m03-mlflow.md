@@ -99,6 +99,16 @@ kubectl -n mlflow logs deploy/mlflow | head -30      # watch the DB migrations o
 
 You should see `curl http://mlflow.$SERVER_IP.nip.io:8080/health` return `OK`, and the UI open in your browser.
 
+After `make configure-ip` or any edit to the Deployment args, **re-apply** the
+manifests and wait for rollout — a running pod keeps the old `--allowed-hosts` /
+`--cors-allowed-origins` until it restarts.
+
+Confirm both security flags are on the live Deployment:
+
+```bash
+kubectl -n mlflow get deploy mlflow -o yaml | grep -E 'allowed-hosts|cors-allowed'
+```
+
 !!! bug "Two real errors hit while writing this module"
     1. `ModuleNotFoundError: No module named 'psycopg'`. **SQLAlchemy 2.1** maps `postgresql://` to *psycopg 3*, not psycopg2, so the plain URI picks a driver you didn't install. The fix is to install `psycopg` **and** spell the driver out: `postgresql+psycopg://`.
     2. `model loading hangs forever` from the host. The server advertises *multipart downloads*: it hands the client presigned MinIO URLs built from **its own** endpoint (`minio.storage.svc.cluster.local`), which doesn't resolve outside the cluster. Clients outside Kubernetes set `MLFLOW_ENABLE_PROXY_MULTIPART_DOWNLOAD=false` (and the `_UPLOAD` equivalent) to stream through the server instead. They're in `.env.example`.
@@ -108,7 +118,25 @@ You should see `curl http://mlflow.$SERVER_IP.nip.io:8080/health` return `OK`, a
 ```bash
 uv add "mlflow==3.17.1" torch scikit-learn pandas     # torch comes from the CPU index (pyproject)
 cp .env.example .env && set -a && source .env && set +a   # MLFLOW_TRACKING_URI etc.
+echo "$MLFLOW_TRACKING_URI"   # must be non-empty and match your Ingress host
 ```
+
+CORS smoke (expect `200`) — needs `.env` so the Origin matches the UI:
+
+```bash
+curl -sS -o /dev/null -w "%{http_code}\n" \
+  -H "Origin: $MLFLOW_TRACKING_URI" \
+  -H "Content-Type: application/json" \
+  -d '{"experiment_ids":["1"]}' \
+  "$MLFLOW_TRACKING_URI/ajax-api/2.0/mlflow/runs/search"
+```
+
+!!! warning "`.env` asymmetry (S3 vs MLflow)"
+    `S3Settings` loads `.env` via pydantic, so training can talk to MinIO even
+    when you forgot `source .env`. **MLflow does not**: without
+    `MLFLOW_TRACKING_URI` in the process environment, the client writes to
+    `./mlruns/` on disk, the train command still exits 0, and the UI stays empty.
+    Always `set -a && source .env && set +a` in the shell before `uv run … train`.
 
 ```bash title=".env.example"
 --8<-- ".env.example"
@@ -154,7 +182,12 @@ uv run python -m mlops_course.training.train --model logreg
 uv run python -m mlops_course.training.train --model mlp --epochs 30
 ```
 
-In the UI, open **Experiments**, then **churn**, select both runs and click **Compare**. Look at `val_auc_epoch` as a curve, the params side by side, and the run's **Artifacts** tab (`code/`, `artifacts/weights.*`, `scaler.json`, `MLmodel`).
+In the UI, open **Experiments**, then **churn**, then the **Runs** tab (not
+**Overview** — MLflow 3's Overview is GenAI-oriented and often shows
+“Failed to load chart data” for classic experiment runs). Select both runs and
+click **Compare**. Look at `val_auc_epoch` as a curve, the params side by side,
+and the run's **Artifacts** tab (`code/`, `artifacts/weights.*`, `scaler.json`,
+`MLmodel`).
 
 ### Step 6: Registry and promotion
 
@@ -203,7 +236,7 @@ make check-m03
 **bug02-allowed-hosts.** Symptom: in-cluster clients work, but the UI and API through the Ingress return `403 Invalid Host header - possible DNS rebinding attack detected`.
 
 ??? success "Solution"
-    MLflow 3's security middleware only accepts `Host` headers in `--allowed-hosts`. The Ingress hostname **including `:8080`** must be listed. Avoid `--allowed-hosts '*'` outside labs.
+    MLflow 3's security middleware only accepts `Host` headers in `--allowed-hosts`. The Ingress hostname **including `:8080`** must be listed. Avoid `--allowed-hosts '*'` outside labs. Teach **CORS beside Host**: the browser also sends `Origin`; without `--cors-allowed-origins=http://mlflow.<IP>.nip.io:8080`, the **Runs** tab maps 403s to `INTERNAL_ERROR` even when health checks pass.
 
 **bug03-artifact-mode.** Symptom: `botocore.exceptions.NoCredentialsError: Unable to locate credentials` **on the client**.
 
@@ -229,6 +262,9 @@ make check-m03
 - **Proxied artifacts** (`--serve-artifacts`): only the server holds S3 credentials.
 - **Clients outside the cluster:** `MLFLOW_ENABLE_PROXY_MULTIPART_DOWNLOAD=false` / `_UPLOAD=false`, or the presigned URLs point at in-cluster DNS.
 - **`--allowed-hosts`** must contain every `host:port` that clients use.
+- **`--cors-allowed-origins`** must list the UI origin (`http://mlflow.<IP>.nip.io:8080`); Host alone is not enough for the Runs tab.
+- **Open Runs, not Overview**, for classic experiment charts after training.
+- **Source `.env` in the shell** for `MLFLOW_TRACKING_URI`; pydantic `.env` loading for S3 does not set it.
 - **Aliases, not stages:** deploy `@champion`, and promote and roll back by moving the alias.
 - **Ship preprocessing inside the model** (pyfunc with artifacts), and fit scalers on **train only**.
 - **`model.eval()` + `torch.no_grad()`** at inference, every time.

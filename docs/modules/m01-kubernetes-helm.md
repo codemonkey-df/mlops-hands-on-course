@@ -208,7 +208,7 @@ git add platform/ && git commit -m "m01: minio + postgres" && git tag m01-done
 
 1. **Self-healing.** Run `kubectl -n storage delete pod -l app.kubernetes.io/name=minio` and watch `get pods -w`. A new pod with a new name appears. Are your buckets still there? (Yes: the PVC survived.)
 2. **Statefulness.** Run `kubectl -n storage delete pod postgres-0`. The replacement is named `postgres-0` again and re-mounts `data-postgres-0`.
-3. **Readiness in action.** Run `kubectl -n storage exec deploy/minio -- kill 1` while watching `kubectl -n storage get endpointslices -w`. The pod IP disappears from the endpoints until the restart completes.
+3. **Readiness in action.** Chainguard/distroless MinIO has no process-signal tools (or shell) in `$PATH`, so do **not** `kubectl exec` a kill into the container. Instead run `kubectl -n storage rollout restart deploy/minio` while watching `kubectl -n storage get endpointslices -w`. The pod IP disappears from the endpoints until the new pod is Ready.
 4. **Helm history.** Change `config.max_connections` to `"300"` in your values, `helm upgrade` it, then run `helm history postgres -n storage`, then `helm rollback postgres 1 -n storage`. Check the setting with `psql -c 'show max_connections'`.
 5. **Checksum annotation.** Add a database to `databases:` and upgrade. The pod restarts because the initdb checksum changed, **but the database is not created**. Why? (The init scripts only run on an empty data dir.) Create it by hand: `psql -c 'CREATE DATABASE x OWNER mlops'`.
 6. **Scheduling.** Run `kubectl -n storage get pods -o wide`. Which node is MinIO on? Run `kubectl get pv -o yaml | grep -A3 nodeAffinity`. local-path pins the volume, and therefore the pod, to that node.

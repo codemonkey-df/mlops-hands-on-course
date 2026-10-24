@@ -12,7 +12,7 @@ features or electives.
 
 | ID | Title | Status | Priority | Effort | Area | Depends |
 |----|-------|--------|----------|--------|------|---------|
-| [V2-010](items/V2-010-fix-critical-learner-blockers.md) | Fix critical learner blockers (M1 / M3 / M4) | ready | high | M | docs | — |
+| [V2-010](items/V2-010-fix-critical-learner-blockers.md) | Fix critical learner blockers (M1 / M3 / M4) | done | high | M | docs | — |
 | [V2-011](items/V2-011-fix-learner-friction-docs.md) | Fix high learner friction (docs / pedagogy, M0–M5) | ready | high | M | docs | V2-010 |
 | [V2-005](items/V2-005-document-bento-vs-weights-paths.md) | Document Bento vs MinIO weight paths | ready | medium | S | docs | — |
 | [V2-004](items/V2-004-overview-prom-keda-edge.md) | Overview diagram: prom → KEDA | ready | low | S | docs | — |
